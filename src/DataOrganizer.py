@@ -1,5 +1,6 @@
 import csv  # CSV data from River
 from Errors import *  # Errors
+
 from re import findall, split  # Regex
 
 # Debug data, not present in production
@@ -126,6 +127,9 @@ class DataFormatReader:
             raise MissingSection(self.format_path, " Incorrect separation of declaration" +
                                  " section in format file ( missing newline \\n) ")
 
+    def create_variable_vectors(self):
+        NotImplemented
+
     def parse_part_two(self):
 
         decl_section_marker = self.rows.index('\n') + 1
@@ -168,10 +172,22 @@ class DataFormatReader:
                     self.variables[new_var] = self.variables[reference]
         else:
             raise BadFormatStyle(self.format_path, f"Unrecognized token at line"
-                                 + source_line)
+                                 + str(decl_section_marker))
+
+        # Resolve section is also in charge of generating the vectors associated with each variable
+        this.create_variable_vectors()
 
     def act(self):
-        NotImplemented
+
+        act_section_marker = self.rows[self.rows.index('\n') + 1:].index('\n')
+        act_section = self.rows[act_section_marker:]
+
+        if 'ACT:' not in act_section[0]:
+            raise MissingSection(self.format_path, " Incorrect separation of acting" +
+                                 " section in format file (missing ACT:?) ")
+
+        for line in act_section:
+            NotImplemented
 
     def print_data(self):
         print(self.rows)
