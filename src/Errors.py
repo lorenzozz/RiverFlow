@@ -1,5 +1,4 @@
-import time
-
+from datetime import datetime
 
 class IncorrectLogFile(Exception):
 
@@ -7,7 +6,7 @@ class IncorrectLogFile(Exception):
         self.ErrorPath = path
 
     def __str__(self) -> str:
-        self.TimeOccurred = time.time()
+        self.TimeOccurred = datetime.now()
         return "IncorrectLogFile Error from Input: <" + \
             str(self.ErrorPath) + \
             " > at " + str(self.TimeOccurred)
@@ -18,7 +17,7 @@ class IncorrectDataFile(Exception):
         self.ErrorPath = path
 
     def __str__(self) -> str:
-        self.TimeOccurred = time.time()
+        self.TimeOccurred = datetime.now.time()
         return "IncorrectDataFile Error from Input: <" + \
             str(self.ErrorPath) + \
             " > at " + str(self.TimeOccurred)
@@ -29,7 +28,7 @@ class IncorrectFormatFile(Exception):
         self.ErrorPath = path
 
     def __str__(self) -> str:
-        self.TimeOccurred = time.time()
+        self.TimeOccurred = datetime.now.time()
         return "IncorrectFormatFile Error from Input: <" + \
             str(self.ErrorPath) + \
             " > at " + str(self.TimeOccurred)
@@ -41,7 +40,7 @@ class BadFormatStyle(Exception):
         self.ErrorSpecific = error_specific
 
     def __str__(self) -> str:
-        self.TimeOccurred = time.time()
+        self.TimeOccurred = datetime.now()
         return "IncorrectFormatFile Error from Input: <" + \
             str(self.ErrorPath) + \
-            " > at " + str(self.TimeOccurred) + str(self.ErrorSpecific)
+            " > at " + str(self.TimeOccurred) + "\n" + str(self.ErrorSpecific)

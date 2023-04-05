@@ -1,5 +1,5 @@
 import csv  # CSV data from River
-from Errors import*  # Errors
+from Errors import *  # Errors
 
 # Debug data, not present in production
 DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
@@ -72,14 +72,25 @@ class DataFormatReader:
 
             # FILE<id> <Path> and arg_list {ID1}...{ID2} are paired, take even
             # and odd element of declaration section
-            for file_token, arg_list in zip( decl_section[::2], decl_section[1::2] ):
-                NotImplemented
+            for file_token, arg_list in zip(decl_section[::2], decl_section[1::2]):
 
+                # Rule out malformed expressions
+                if 'FILE' not in file_token:
+                    raise BadFormatStyle(self.format_path, " Missing FILE token at line " +
+                                         str(self.rows.index(file_token)))
 
+                if file_token.count('<') + file_token.count('>') != 2:
+                    raise BadFormatStyle(self.format_path, " Incoherent use of delimiter tokens <> " +
+                                         "or use of illegal character '>', '<' ")
+
+                file_path = file_token.split('<')[1].split('>')[0].strip(' ')
+                file_label = file_token.split('FILE')[1].split(':')[0].strip(' ')
+
+                print(file_path)
+                print(file_label)
         else:
             raise BadFormatStyle(self.format_path, " Incorrect separation of declaration" +
                                  " section in format file ( missing newline \\n) ")
-
 
     def parse_part_two(self):
         NotImplemented
@@ -92,12 +103,11 @@ class DataFormatReader:
 
 
 if __name__ == '__main__':
-
     Parse_data = 'C:/Users/picul/OneDrive/Documenti/RiverDataOrganizer.txt'
 
-    DataOrg = DataOrganizer(DataFolderPath+CSVRiverPath)
+    DataOrg = DataOrganizer(DataFolderPath + CSVRiverPath)
     dataFormat = DataFormatReader(Parse_data)
 
     dataFormat.create_data()
     dataFormat.print_data()
-
+    dataFormat.parse_part_one()
