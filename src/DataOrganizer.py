@@ -32,7 +32,6 @@ class DataOrganizer:
     def get_data_numeric(self, element):
         element = self.extracted_data[3]
         print(element)
-        date, hour_value = element[0].split(';')
 
         return element
 
@@ -54,7 +53,8 @@ class DataFormatReader:
         # that will be needed during construction of data row
         self.variables = {}
         self.input_files = {}
-    
+        self.formats = {}
+
     def create_data(self):
         """
         Read data from format path and store lines into self.Rows
@@ -83,6 +83,7 @@ class DataFormatReader:
             for file_token, arg_list in zip(decl_section[::2], decl_section[1::2]):
 
                 source_line = str(self.rows.index(file_token))
+                arg_list = arg_list.strip('\n')
 
                 # Rule out malformed expressions
                 if 'FILE' not in file_token:
@@ -108,7 +109,18 @@ class DataFormatReader:
                     raise MismatchedToken(self.format_path, "Mismatched '{' parenthesis in declaration "
                                                             "of variables at line " + source_line)
 
-                print([arg for argument in arg_list.split('{') for arg in argument.split('}')])
+                split_arg_list = [a for arg in arg_list.split('{') for a in arg.split('}')]
+
+                # Note that while labels occur between two occurrences of a '{'/'}' parenthesis, on
+                # odd positions, format separators occur on even positions of the split_arg_list
+                variable_names = split_arg_list[1::2]
+                self.formats[file_label] = split_arg_list[::2]
+
+                if any(i in self.variables for i in variable_names):
+                    raise BadFormatStyle(self.format_path, f"Label already defined was redeclared"
+                                                           " at line " + source_line)
+
+                self.variables.update({name: None for name in variable_names})
 
         else:
             raise BadFormatStyle(self.format_path, " Incorrect separation of declaration" +
@@ -123,11 +135,38 @@ class DataFormatReader:
     def print_data(self):
         print(self.rows)
 
+    @staticmethod
+    def parse_csv_line(format_string, line):
+        data = []
+        for sep in format_string:
+            if sep:
+                line = line.split(sep, 1)
+                data.append(line[0])
+                line = line[1]
+        if not format_string[-1]:
+            data.append(line)
+
+        return data
+
+    def parse_file(self, label):
+
+        with open(self.input_files[label], "r") as csv_file:
+            lines = csv.reader(csv_file, dialect='excel')
+            if csv.Sniffer().has_header(csv_file.read(512)):
+                lines.__next__()    # Glance over first line
+
+            data = [self.parse_csv_line( self.formats[label], line[0]) for line in lines]
+
+        return data
+
 
 if __name__ == '__main__':
     Parse_data = 'C:/Users/picul/OneDrive/Documenti/RiverDataOrganizer.txt'
 
     DataOrg = DataOrganizer(DataFolderPath + CSVRiverPath)
+    DataOrg.open_data()
+    DataOrg.extract_data()
+
     dataFormat = DataFormatReader(Parse_data)
 
     dataFormat.create_data()
