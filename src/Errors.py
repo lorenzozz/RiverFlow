@@ -64,3 +64,4 @@ class MissingSection(BadFormatStyle):
 
     def __str__(self):
         return super().__str__()
+

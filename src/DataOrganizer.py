@@ -1,6 +1,6 @@
 import csv  # CSV data from River
 from Errors import *  # Errors
-
+from VariableVectorAlgebra import *
 from re import findall, split  # Regex
 
 # Debug data, not present in production
@@ -39,7 +39,11 @@ class DataOrganizer:
 
 class DataFormatReader:
     def __init__(self, format_path):
-
+        """  Initialize DataFormatReader object.
+        Fills out format_path as input path, rows as the rows of
+        the input file and various state variables to parse expressions
+        in action section.
+        :return: None """
         self.format_path = format_path
         try:
             self.data = open(format_path, "r")
@@ -53,21 +57,23 @@ class DataFormatReader:
         # On the other hand, variables is a dictionary containing the type of variable
         # that will be needed during construction of data row
         self.variables = {}
+        # Input_files contains labels and filepath of each input file
         self.input_files = {}
+        # Formats contains a copy of a file format disposition when
+        # it is necessary to parse subexpressions
         self.formats = {}
 
+        self.var_vector = VariableVectorManager()
+
     def create_data(self):
-        """
-        Read data from format path and store lines into self.Rows
-        :return: None
-        """
+        """ Read data from format path and store lines into self.Rows
+        :return: None """
         self.rows = self.data.readlines()
 
     def parse_part_one(self):
         """ Parse first part of format description file into a list of input files along
         with their corresponding format string
-        :return: None
-         """
+        :return: None """
 
         # Note: as format is required to have a blank newline before start of
         # Part 2, we can find the index of the empty element '\n' inside self.rows
@@ -103,7 +109,6 @@ class DataFormatReader:
                                                            " at line " + source_line)
 
                 # Add filepath file dictionary
-                self.files_arglists[file_label] = arg_list
                 self.input_files[file_label] = file_path
 
                 if arg_list.count('{') != arg_list.count('}'):
@@ -116,6 +121,7 @@ class DataFormatReader:
                 # odd positions, format separators occur on even positions of the split_arg_list
                 variable_names = split_arg_list[1::2]
                 self.formats[file_label] = split_arg_list[::2]
+                self.files_arglists[file_label] = variable_names
 
                 if any(i in self.variables for i in variable_names):
                     raise BadFormatStyle(self.format_path, f"Label already defined was redeclared"
@@ -142,11 +148,18 @@ class DataFormatReader:
             if owner_file not in opened_files.keys():
                 opened_files[owner_file] = self.parse_file(owner_file)
 
+            var_col_i = self.files_arglists[owner_file].index(variable)
+
+            # Pass new variable onto vector mathematics manager
+            file_data = opened_files[owner_file]
+            self.var_vector.add_variable(variable, [
+                row[var_col_i] for row in file_data
+            ])
 
     def parse_part_two(self):
 
         decl_section_marker = self.rows.index('\n') + 1
-        act_section_marker = self.rows[decl_section_marker + 1:].index('\n')
+        act_section_marker = self.rows[decl_section_marker:].index('\n') + decl_section_marker
 
         if not act_section_marker:
             raise MissingSection(self.format_path, "Act segment not present" +
@@ -176,8 +189,8 @@ class DataFormatReader:
 
             elif '=' in declaration:
 
-                new_var = declaration.split(':')[0].strip()
-                reference = declaration.split(':')[1].strip()
+                new_var = declaration.split('=')[0].strip()
+                reference = declaration.split('=')[1].strip()
 
                 # No variable can be assigned before being declared and specified.
                 if reference not in self.variables.keys() or not self.variables[reference]:
@@ -194,23 +207,29 @@ class DataFormatReader:
         # Resolve section is also in charge of generating the vectors associated
         # with each variable as it must remember assignments and do deep-copy of
         # numpy vectors associated with copied variables
-
         self.create_variable_vectors()
 
-        for pair in copy_action:
-            NotImplemented
+        for new, copied in copy_action:
+            self.var_vector.add_copy_of(new, copied)
+            self.variables[new] = self.variables[copied]
 
-    def act(self):
+    def act(self, no_except=False):
 
-        act_section_marker = self.rows[self.rows.index('\n') + 1:].index('\n')
-        act_section = self.rows[act_section_marker:]
+        decl_sec = self.rows.index('\n') + 1
+        act_sec = self.rows[decl_sec:].index('\n') + decl_sec
+
+        act_section = self.rows[act_sec + 1:]
 
         if 'ACT:' not in act_section[0]:
             raise MissingSection(self.format_path, " Incorrect separation of acting" +
                                  " section in format file (missing ACT:?) ")
 
-        for line in act_section:
-            NotImplemented
+        self.var_vector.load_grammar_mapper()
+
+        for line in act_section[1:]:
+            # Note that execution will not continue if VariableVectorAlgebra
+            # manager throws an exception over an impossible vectorial operation.
+            self.var_vector.execute_function(line, no_except)
 
     def print_data(self):
         print(self.rows)
@@ -253,3 +272,4 @@ if __name__ == '__main__':
     dataFormat.print_data()
     dataFormat.parse_part_one()
     dataFormat.parse_part_two()
+    dataFormat.act()
