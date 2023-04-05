@@ -92,14 +92,14 @@ class DataFormatReader:
 
                 if file_token.count('<') + file_token.count('>') != 2:
                     raise MismatchedToken(self.format_path, "Incoherent use of delimiter tokens <> "
-                                          "or use of illegal character '>', '<' ")
+                                                            "or use of illegal character '>', '<' ")
 
                 file_path = file_token.split('<')[1].split('>')[0].strip(' ')
                 file_label = file_token.split('FILE')[1].split(':')[0].strip(' ')
 
                 if not file_label or file_label == '':
                     raise BadFormatStyle(self.format_path, f"File label required for FILE {file_path}"
-                                         " at line " + source_line)
+                                                           " at line " + source_line)
 
                 # Add filepath file dictionary
                 self.files_arglists[file_label] = arg_list
@@ -123,11 +123,52 @@ class DataFormatReader:
                 self.variables.update({name: None for name in variable_names})
 
         else:
-            raise BadFormatStyle(self.format_path, " Incorrect separation of declaration" +
+            raise MissingSection(self.format_path, " Incorrect separation of declaration" +
                                  " section in format file ( missing newline \\n) ")
 
     def parse_part_two(self):
-        NotImplemented
+
+        decl_section_marker = self.rows.index('\n') + 1
+        act_section_marker = self.rows[decl_section_marker + 1:].index('\n')
+
+        if not act_section_marker:
+            raise MissingSection(self.format_path, "Act segment not present" +
+                                 "in format file ( missing newline \\n? ) ")
+
+        recognized_data_types = ['Categorical', 'Numeric', 'Boolean']
+        resolve_section = self.rows[decl_section_marker:act_section_marker]
+        for declaration in resolve_section:
+            source_line = str(self.rows.index(declaration))
+
+            if ':' in declaration:
+
+                variable_name = declaration.split(':')[0].strip()
+                category = declaration.split(':')[1].strip()
+
+                if category not in recognized_data_types:
+                    raise BadFormatStyle(self.format_path, f"Unrecognized data category at "
+                                                           f"line" + source_line)
+                elif variable_name not in self.variables.keys():
+                    raise BadFormatStyle(self.format_path, f"Unknown variable referenced at"
+                                                           f" line" + source_line)
+
+                self.variables[variable_name] = category
+
+            elif '=' in declaration:
+
+                new_var = declaration.split(':')[0].strip()
+                reference = declaration.split(':')[1].strip()
+
+                # No variable can be assigned before being declared and specified.
+                if reference not in self.variables.keys() or not self.variables[reference]:
+                    raise BadFormatStyle(self.format_path, f"Unknown or unspecified "
+                                                           f"variable referenced"
+                                                           f" at line" + source_line)
+                else:
+                    self.variables[new_var] = self.variables[reference]
+        else:
+            raise BadFormatStyle(self.format_path, f"Unrecognized token at line"
+                                 + source_line)
 
     def act(self):
         NotImplemented
@@ -153,9 +194,9 @@ class DataFormatReader:
         with open(self.input_files[label], "r") as csv_file:
             lines = csv.reader(csv_file, dialect='excel')
             if csv.Sniffer().has_header(csv_file.read(512)):
-                lines.__next__()    # Glance over first line
+                lines.__next__()  # Glance over first line
 
-            data = [self.parse_csv_line( self.formats[label], line[0]) for line in lines]
+            data = [self.parse_csv_line(self.formats[label], line[0]) for line in lines]
 
         return data
 
@@ -172,3 +213,4 @@ if __name__ == '__main__':
     dataFormat.create_data()
     dataFormat.print_data()
     dataFormat.parse_part_one()
+    dataFormat.parse_part_two()
