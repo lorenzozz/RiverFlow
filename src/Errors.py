@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime   # datetime.now
+
 
 class IncorrectLogFile(Exception):
 
@@ -34,6 +35,7 @@ class IncorrectFormatFile(Exception):
             " > at " + str(self.TimeOccurred)
 
 
+# Generic bad format style sheet error
 class BadFormatStyle(Exception):
     def __init__(self, path, error_specific):
         self.ErrorPath = path
@@ -55,10 +57,10 @@ class MismatchedToken(BadFormatStyle):
         return super().__str__()
 
 
+# Descriptive alias for specific missing section error
 class MissingSection(BadFormatStyle):
     def __init__(self, path, error_specific):
         super().__init__(path, error_specific)
 
     def __str__(self):
         return super().__str__()
-

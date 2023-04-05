@@ -128,7 +128,20 @@ class DataFormatReader:
                                  " section in format file ( missing newline \\n) ")
 
     def create_variable_vectors(self):
-        NotImplemented
+
+        opened_files = {}
+        for variable in self.variables:
+
+            owner_file = next((label for label in self.input_files.keys()
+                               if variable in self.files_arglists[label]), None)
+
+            if not owner_file:
+                raise BadFormatStyle(self.format_path, f"Variable {variable} has no" +
+                                     f" associated source file redeclared at line ")
+
+            if owner_file not in opened_files.keys():
+                opened_files[owner_file] = self.parse_file(owner_file)
+
 
     def parse_part_two(self):
 
@@ -141,6 +154,9 @@ class DataFormatReader:
 
         recognized_data_types = ['Categorical', 'Numeric', 'Boolean']
         resolve_section = self.rows[decl_section_marker:act_section_marker]
+
+        copy_action: list[tuple] = []
+
         for declaration in resolve_section:
             source_line = str(self.rows.index(declaration))
 
@@ -169,13 +185,20 @@ class DataFormatReader:
                                                            f"variable referenced"
                                                            f" at line" + source_line)
                 else:
-                    self.variables[new_var] = self.variables[reference]
-        else:
-            raise BadFormatStyle(self.format_path, f"Unrecognized token at line"
-                                 + str(decl_section_marker))
+                    copy_action.append((new_var, reference))
 
-        # Resolve section is also in charge of generating the vectors associated with each variable
-        this.create_variable_vectors()
+            else:
+                raise BadFormatStyle(self.format_path, f"Unrecognized token at line"
+                                     + str(decl_section_marker))
+
+        # Resolve section is also in charge of generating the vectors associated
+        # with each variable as it must remember assignments and do deep-copy of
+        # numpy vectors associated with copied variables
+
+        self.create_variable_vectors()
+
+        for pair in copy_action:
+            NotImplemented
 
     def act(self):
 
