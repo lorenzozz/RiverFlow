@@ -44,3 +44,13 @@ class BadFormatStyle(Exception):
         return "IncorrectFormatFile Error from Input: <" + \
             str(self.ErrorPath) + \
             " > at " + str(self.TimeOccurred) + "\n" + str(self.ErrorSpecific)
+
+
+# Descriptive alias for specific mismatched parenthesis error
+class MismatchedToken(BadFormatStyle):
+    def __init__(self, path, error_specific):
+        super().__init__(path, error_specific)
+
+    def __str__(self):
+        return super().__str__()
+

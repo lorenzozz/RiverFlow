@@ -1,5 +1,6 @@
 import csv  # CSV data from River
 from Errors import *  # Errors
+from re import findall, split  # Regex
 
 # Debug data, not present in production
 DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
@@ -38,15 +39,22 @@ class DataOrganizer:
 
 class DataFormatReader:
     def __init__(self, format_path):
+
         self.format_path = format_path
         try:
             self.data = open(format_path, "r")
         except Exception:
             raise IncorrectFormatFile(format_path)
         self.rows = None
-        self.data_types = {}
-        self.input_files = []
 
+        # Note the difference. files_arglists is a dictionary where each key is a
+        # file label, containing the complete argument list formatted for each file
+        self.files_arglists = {}
+        # On the other hand, variables is a dictionary containing the type of variable
+        # that will be needed during construction of data row
+        self.variables = {}
+        self.input_files = {}
+    
     def create_data(self):
         """
         Read data from format path and store lines into self.Rows
@@ -67,27 +75,41 @@ class DataFormatReader:
         if '\n' in self.rows:
             decl_section = self.rows[:self.rows.index('\n')]
             if len(decl_section) % 2:
-                raise BadFormatStyle(self.format_path, " Bad pairing of declarations: " +
+                raise BadFormatStyle(self.format_path, "Bad pairing of declarations: " +
                                      "mismatched pair in declaration section ")
 
             # FILE<id> <Path> and arg_list {ID1}...{ID2} are paired, take even
             # and odd element of declaration section
             for file_token, arg_list in zip(decl_section[::2], decl_section[1::2]):
 
+                source_line = str(self.rows.index(file_token))
+
                 # Rule out malformed expressions
                 if 'FILE' not in file_token:
-                    raise BadFormatStyle(self.format_path, " Missing FILE token at line " +
-                                         str(self.rows.index(file_token)))
+                    raise BadFormatStyle(self.format_path, "Missing FILE token at line " +
+                                         source_line)
 
                 if file_token.count('<') + file_token.count('>') != 2:
-                    raise BadFormatStyle(self.format_path, " Incoherent use of delimiter tokens <> " +
-                                         "or use of illegal character '>', '<' ")
+                    raise MismatchedToken(self.format_path, "Incoherent use of delimiter tokens <> "
+                                          "or use of illegal character '>', '<' ")
 
                 file_path = file_token.split('<')[1].split('>')[0].strip(' ')
                 file_label = file_token.split('FILE')[1].split(':')[0].strip(' ')
 
-                print(file_path)
-                print(file_label)
+                if not file_label or file_label == '':
+                    raise BadFormatStyle(self.format_path, f"File label required for FILE {file_path}"
+                                         " at line " + source_line)
+
+                # Add filepath file dictionary
+                self.files_arglists[file_label] = arg_list
+                self.input_files[file_label] = file_path
+
+                if arg_list.count('{') != arg_list.count('}'):
+                    raise MismatchedToken(self.format_path, "Mismatched '{' parenthesis in declaration "
+                                                            "of variables at line " + source_line)
+
+                print([arg for argument in arg_list.split('{') for arg in argument.split('}')])
+
         else:
             raise BadFormatStyle(self.format_path, " Incorrect separation of declaration" +
                                  " section in format file ( missing newline \\n) ")
