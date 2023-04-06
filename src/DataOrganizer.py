@@ -284,7 +284,9 @@ class DataFormatReader:
 
         save_files = {}
         sap_sec = self.rows.index('.sap\n')
-        for line in [li for li in self.rows[sap_sec + 1:] if li != '\n']:
+        make_sec = self.rows.index('.make\n')
+
+        for line in [li for li in self.rows[sap_sec + 1:make_sec] if li != '\n']:
             line_number = str(self.rows.index(line))
 
             # Do not parse comments.
@@ -338,8 +340,34 @@ class DataFormatReader:
 
                     new_csv_file.writelines(lines)
 
-    def parse_plan(self):
+
+    # Return ending statement.
+    def make_plan(self)->str:
         NotImplemented
+        return 0
+
+    def parse_plan(self):
+
+        plan_sec = self.rows.index('.plan\n') + 1
+        compiling_plan = False
+
+        current_row = plan_sec
+        while current_row < len(self.rows):
+            statement = self.rows[current_row]
+
+            if 'begin plan' in statement:
+                current_row = self.make_plan(current_row)
+            elif 'compile' in statement:
+
+                plan_label = statement.split('compile')[1].split('into')[0]
+                plan_file_label = statement.split('into')[1].strip()
+                NotImplemented
+
+
+
+
+
+
 
     def print_data(self):
         print(self.rows)

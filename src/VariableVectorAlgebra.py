@@ -49,6 +49,8 @@ class VariableVectorManager:
         try:
             if 'print(' in statement:
                 print(eval(statement.split('print(')[1].split(')')[0].strip(), self.grammar))
+            elif 'plot' in statement:
+                NotImplemented
             else:
                 ref_var = statement.split('=')[0].strip()
                 action = statement.split('=')[1].strip()
@@ -60,6 +62,9 @@ class VariableVectorManager:
         except Exception as BroadException:
             NotImplemented
             print(BroadException)
+
+    def get_useful_error_description(self, exception, statement):
+        NotImplemented
 
     def get_variable(self, variable_name):
         return self.variables[variable_name]
@@ -90,7 +95,7 @@ class VariableVectorManager:
              "lunghezza": np.size,
              "gaussiana": "gaussiana",  # Label
              "esponenziale": "esponenziale",  # Label
-             "uniforme": "uniforme",   # Label
+             "uniforme": "uniforme",  # Label
              }
         self.grammar.update(self.variables)
 
