@@ -5,10 +5,6 @@ from Errors import *  # Errors
 from VariableVectorAlgebra import *
 from re import findall, split  # Regex
 
-# Debug data, not present in production
-DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
-CSVRiverPath = 'sesia-scopello-scopetta.csv'
-
 
 class DataOrganizer:
     def __init__(self, data_path):
@@ -160,7 +156,6 @@ class DataFormatReader:
                 row[var_col_i] for row in file_data
             ], as_type)
 
-
     def parse_part_two(self):
 
         decl_section_marker = self.rows.index('\n') + 1
@@ -221,8 +216,10 @@ class DataFormatReader:
 
         decl_sec = self.rows.index('\n') + 1
         act_sec = self.rows[decl_sec:].index('\n') + decl_sec
+        sap_sec = self.rows.index('.sap\n')
 
-        act_section = self.rows[act_sec + 1:]
+        act_section = self.rows[act_sec + 1:sap_sec]
+        act_section.remove('\n')
 
         if 'ACT:' not in act_section[0]:
             raise MissingSection(self.format_path, " Incorrect separation of acting" +
@@ -237,7 +234,7 @@ class DataFormatReader:
             "datetime": datetime
         }
 
-        for line in act_section[1:]:
+        for line in [li for li in act_section[1:] if li != '\n']:
 
             line_number = self.rows.index(line)
 
@@ -280,7 +277,58 @@ class DataFormatReader:
                 self.var_vector.execute_line(line, line_number)
 
     def parse_sap(self):
-        NotImplemented
+
+        save_files = {}
+        sap_sec = self.rows.index('.sap\n')
+        next_sec = -1
+        for line in [li for li in self.rows[sap_sec + 1:next_sec] if li != '\n']:
+
+            line_number = str(self.rows.index(line))
+
+            # Do not parse comments.
+            line = line.split('#')[0] if '#' in line else line
+
+            if 'save_file' in line:
+                if '=' in line:
+                    file_name = line.split('save_file')[1].split('=')[0].strip()
+                else:
+                    raise BadSaveFile(None, "Incorrect declaration of save file, missing '=' "
+                                            "token at line " + line_number)
+
+                save_files[file_name] = line.split('\"')[1].split('\"')[0].strip()
+            elif 'save' in line:
+                # Save requested variables with indicate format. a ';' signals csv
+                # to separate into different columns, the rest of the characters are taken
+                # literally and appended to the data value.
+                if 'into' not in line:
+                    raise BadSaveFile(None, "File label not specified while saving at"
+                                            " line " + line_number)
+
+                format_expression = line.split('\"')[1].split('\"')[0]
+                file_requested = line.split('into')[1].strip()
+
+                if file_requested not in save_files.keys():
+                    raise BadSaveFile(None, "save_file label not recognized at"
+                                            " line " + line_number)
+
+                # Attempting to write a save file with variables of different
+                # dimension is nonsense. Find any such occurrence and issue an
+                # error
+                var_requested = [el for sl in format_expression.split('}') for el in sl.split('{')][1::2]
+                print(var_requested)
+
+                var_dims = [self.var_vector.variables_dims[var] for var in var_requested]
+                print(var_dims)
+
+                if var_dims.count(var_dims[0]) != len(var_dims):
+                    raise IncompatibleVecSizes(file_requested, "Cannot perform" +
+                                               " operations with vectors of different sizes at line" + line_number)
+
+                with open(save_files[file_requested], "w") as new_csv_file:
+                    csv_writer = csv.writer(new_csv_file)
+                    NotAssignmentExpression
+
+        print(save_files)
 
     def parse_plan(self):
         NotImplemented
@@ -315,6 +363,9 @@ class DataFormatReader:
 
 if __name__ == '__main__':
     Parse_data = 'C:/Users/picul/OneDrive/Documenti/RiverDataOrganizer.txt'
+    # Debug data, not present in production
+    DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
+    CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
     DataOrg = DataOrganizer(DataFolderPath + CSVRiverPath)
     DataOrg.open_data()
@@ -327,3 +378,4 @@ if __name__ == '__main__':
     dataFormat.parse_part_one()
     dataFormat.parse_part_two()
     dataFormat.act()
+    dataFormat.parse_sap()

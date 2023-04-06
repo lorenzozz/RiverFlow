@@ -29,6 +29,8 @@ class VariableVectorManager:
         # a new variable under label new_label
         self.variables[variable_to_copy] = np.ndarray.copy(self.variables[new_label])
         self.variables_dims[variable_to_copy] = np.size(self.variables[new_label])
+        if self.grammar:
+            self.grammar[variable_to_copy] = self.variables[variable_to_copy]
 
     def execute_line(self, statement, line_number):
         # First parse statement into lh-side, rh-side
@@ -44,6 +46,7 @@ class VariableVectorManager:
                 action = statement.split('=')[1].strip()
 
                 self.variables[ref_var] = eval(action, self.grammar)
+                self.variables_dims[ref_var] = np.size(self.variables[ref_var])
                 self.grammar[ref_var] = self.variables[ref_var]
 
         except Exception as BroadException:
@@ -87,3 +90,6 @@ class VariableVectorManager:
     def add_package(self, package, pack):
         # Add passed package to grammar
         self.grammar[package] = pack
+
+    def get_sizeof_var(self, variable):
+        return self.variables_dims[variable]

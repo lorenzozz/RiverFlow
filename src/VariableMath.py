@@ -25,14 +25,30 @@ def vec_zero_outliers():
 
 
 def vec_zero_mean(x):
+    """
+    Subtracts the mean of vector x to x itself, making it a
+    zero-mean vector.
+    :param x: variable
+    :return: variable with zero mean
+    """
     return x - np.mean(x)
 
 
 def vec_mean(x):
+    """
+    Computes the mean of a variable
+    :param x: variable
+    :return: variable's mean
+    """
     return np.mean(x)
 
 
 def vec_std(x):
+    """
+    Computes the standard deviation of a variable
+    :param x: variable
+    :return: variable's standard deviation
+    """
     return np.mean(x)
 
 

@@ -65,3 +65,19 @@ class MissingSection(BadFormatStyle):
     def __str__(self):
         return super().__str__()
 
+
+class BadSaveFile(BadFormatStyle):
+    def __init__(self, path, error_specific):
+        super().__init__(path, error_specific)
+
+    def __str__(self):
+        return super().__str__()
+
+
+class IncompatibleVecSizes(BadFormatStyle):
+    def __init__(self, path, error_specific):
+        super().__init__(path, error_specific)
+
+    def __str__(self):
+        return super().__str__()
+
