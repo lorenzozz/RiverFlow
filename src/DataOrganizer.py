@@ -358,7 +358,7 @@ class DataFormatReader:
                 # Delegate the building of the actual plan to a DatasetPlanner Object,
                 # then find the end of the declaration and proceed in parsing simpler
                 # statements.
-                plan_registered[plan_name] = DatasetPlanner(self.rows[current_row:], self.var_vector)
+                plan_registered[plan_name] = DatasetPlanner(self.rows[current_row:], self.var_vector, plan_name)
                 plan_registered[plan_name].parse()
                 current_row = next(i for i in range(current_row, len(self.rows)) if 'end plan' in self.rows[i])
 
@@ -412,13 +412,13 @@ class DataFormatReader:
 
 if __name__ == '__main__':
     Parse_data = 'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
-    Parse_datat = 'C:/Users/picul/OneDrive/Documenti/riverscript.txt'
+    Parse_datat = 'C:/Users/picul/OneDrive/Documenti/riverscript2.txt'
 
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
-    dataFormat = DataFormatReader(Parse_data)
+    dataFormat = DataFormatReader(Parse_datat)
 
     dataFormat.create_data()
     dataFormat.parse_part_one()
