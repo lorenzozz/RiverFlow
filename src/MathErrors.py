@@ -15,3 +15,11 @@ class NotAssignmentExpression(Exception):
 
     def __str__(self):
         return self.expression
+
+
+class UnrecognizedPackageReference(Exception):
+    def __init__(self, expression):
+        self.expression = expression
+
+    def __str__(self):
+        return self.expression

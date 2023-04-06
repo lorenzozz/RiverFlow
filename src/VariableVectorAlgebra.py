@@ -32,17 +32,19 @@ class VariableVectorManager:
 
     def execute_line(self, statement, line_number):
         # First parse statement into lh-side, rh-side
-        if '=' not in statement:
+        if '=' not in statement and 'print(' not in statement:
             self.error_issuer(NotAssignmentExpression, f"At line {line_number}: Attempting" +
                               " to execute a non-assignment expression is an error as" +
                               "every variable is treated by value, not reference")
         try:
-            ref_var = statement.split('=')[0].strip()
-            action = statement.split('=')[1].strip()
+            if 'print(' in statement:
+                print(eval(statement.split('print(')[1].split(')')[0].strip(), self.grammar))
+            else:
+                ref_var = statement.split('=')[0].strip()
+                action = statement.split('=')[1].strip()
 
-            print("> Executing statement: ", statement)
-            print(f"> Parsed as {ref_var}, {action}")
-            self.variables[ref_var] = eval(action, self.grammar)
+                self.variables[ref_var] = eval(action, self.grammar)
+                self.grammar[ref_var] = self.variables[ref_var]
 
         except Exception as BroadException:
             NotImplemented
@@ -63,10 +65,11 @@ class VariableVectorManager:
 
     def load_grammar_mapper(self):
 
+        # Predefined function aliases.
         self.grammar = \
             {"Discretizza": vec_discrete,
              "AggiungiRumore": vec_add_noise,
-             "BoolANumero": vec_bool_to_num,
+             "DaCategoricoANumero": vec_bool_to_num,
              "MediaZero": vec_zero_mean,
              "Media": vec_mean,
              "DevStand": vec_std,
@@ -75,7 +78,12 @@ class VariableVectorManager:
              }
         self.grammar.update(self.variables)
 
-    def take_type(self, var_type):
-        return {"Categorical": str,
-                 "Boolean": str,
-                 "Numeric": numpy.float64}[var_type]
+    @staticmethod
+    def take_type(var_type):
+        return {"categorical": str,
+                "boolean": str,
+                "numeric": numpy.float64}[var_type]
+
+    def add_package(self, package, pack):
+        # Add passed package to grammar
+        self.grammar[package] = pack

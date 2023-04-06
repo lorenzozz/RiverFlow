@@ -1,4 +1,6 @@
 import csv  # CSV data from River
+import math  # Supported package
+
 from Errors import *  # Errors
 from VariableVectorAlgebra import *
 from re import findall, split  # Regex
@@ -85,7 +87,7 @@ class DataFormatReader:
                 raise BadFormatStyle(self.format_path, "Bad pairing of declarations: " +
                                      "mismatched pair in declaration section ")
 
-            # FILE<id> <Path> and arg_list {ID1}...{ID2} are paired, take even
+            # file<id> <Path> and arg_list {ID1}...{ID2} are paired, take even
             # and odd element of declaration section
             for file_token, arg_list in zip(decl_section[::2], decl_section[1::2]):
 
@@ -93,7 +95,7 @@ class DataFormatReader:
                 arg_list = arg_list.strip('\n')
 
                 # Rule out malformed expressions
-                if 'FILE' not in file_token:
+                if 'file' not in file_token:
                     raise BadFormatStyle(self.format_path, "Missing FILE token at line " +
                                          source_line)
 
@@ -102,7 +104,7 @@ class DataFormatReader:
                                                             "or use of illegal character '>', '<' ")
 
                 file_path = file_token.split('<')[1].split('>')[0].strip(' ')
-                file_label = file_token.split('FILE')[1].split(':')[0].strip(' ')
+                file_label = file_token.split('file')[1].split(':')[0].strip(' ')
 
                 if not file_label or file_label == '':
                     raise BadFormatStyle(self.format_path, f"File label required for FILE {file_path}"
@@ -159,7 +161,6 @@ class DataFormatReader:
             ], as_type)
 
 
-
     def parse_part_two(self):
 
         decl_section_marker = self.rows.index('\n') + 1
@@ -169,7 +170,7 @@ class DataFormatReader:
             raise MissingSection(self.format_path, "Act segment not present" +
                                  "in format file ( missing newline \\n? ) ")
 
-        recognized_data_types = ['Categorical', 'Numeric', 'Boolean']
+        recognized_data_types = ['categorical', 'numeric', 'boolean']
         resolve_section = self.rows[decl_section_marker:act_section_marker]
 
         copy_action: list[tuple] = []
@@ -203,7 +204,6 @@ class DataFormatReader:
                                                            f" at line" + source_line)
                 else:
                     copy_action.append((new_var, reference))
-
             else:
                 raise BadFormatStyle(self.format_path, f"Unrecognized token at line"
                                      + str(decl_section_marker))
@@ -230,6 +230,13 @@ class DataFormatReader:
 
         self.var_vector.load_grammar_mapper()
         self.var_vector.change_error_mode(no_except)
+
+        recognized_packages = {
+            "numpy": np,
+            "math": math,
+            "datetime": datetime
+        }
+
         for line in act_section[1:]:
 
             line_number = self.rows.index(line)
@@ -240,22 +247,43 @@ class DataFormatReader:
                 # use.
                 # Note that execution will not continue if VariableVectorAlgebra
                 # manager throws an exception over an impossible vectorial operation.
-                var_name = line.split('new ')[1].strip()
+                var_name = line.split('new ')[1].strip() if '=' not in line else \
+                    line.split('new ')[1].split('=')[0].strip()
+
                 if not var_name:
                     raise BadFormatStyle(self.format_path, f"Incorrect data declaration"
                                          + " in action segment at line " + str(line_number))
 
-                    # Variable has no data to be initialized with, hence it cannot be used
-                    # as rhs.
+                # Variable has no data to be initialized with, hence it cannot be used
+                # as rhs.
                 self.variables[var_name] = None
-                self.var_vector.add_variable(var_name, [], self.var_vector.take_type("Numeric"))
+                self.var_vector.add_variable(var_name, [], self.var_vector.take_type("numeric"))
 
                 # Support for immediate initialization.
                 if '=' in line:
                     self.var_vector.execute_line(line.split('new')[1], line_number)
+            elif 'import' in line:
+                package_name = line.strip().split(' ')[1]
+                if package_name in recognized_packages.keys():
 
+                    # Support for package aliases
+                    if 'as' in line:
+                        alias = line.strip().split(' ')[3]
+                    else:
+                        alias = package_name
+
+                    self.var_vector.add_package(alias, recognized_packages[package_name])
+
+                else:
+                    raise UnrecognizedPackageReference(f"Package {package_name} not recognized.")
             else:
                 self.var_vector.execute_line(line, line_number)
+
+    def parse_sap(self):
+        NotImplemented
+
+    def parse_plan(self):
+        NotImplemented
 
     def print_data(self):
         print(self.rows)
@@ -295,7 +323,7 @@ if __name__ == '__main__':
     dataFormat = DataFormatReader(Parse_data)
 
     dataFormat.create_data()
-    dataFormat.print_data()
+    # dataFormat.print_data()
     dataFormat.parse_part_one()
     dataFormat.parse_part_two()
     dataFormat.act()
