@@ -152,9 +152,13 @@ class DataFormatReader:
 
             # Pass new variable onto vector mathematics manager
             file_data = opened_files[owner_file]
+            # Categorical and Boolean variables are not converted to float autonomously.
+            as_type = self.var_vector.take_type(self.variables[variable])
             self.var_vector.add_variable(variable, [
                 row[var_col_i] for row in file_data
-            ])
+            ], as_type)
+
+
 
     def parse_part_two(self):
 
@@ -225,11 +229,33 @@ class DataFormatReader:
                                  " section in format file (missing ACT:?) ")
 
         self.var_vector.load_grammar_mapper()
-
+        self.var_vector.change_error_mode(no_except)
         for line in act_section[1:]:
-            # Note that execution will not continue if VariableVectorAlgebra
-            # manager throws an exception over an impossible vectorial operation.
-            self.var_vector.execute_function(line, no_except)
+
+            line_number = self.rows.index(line)
+
+            if 'new ' in line:
+                # A new variable has been declared. Note that variables
+                # initialized in this manner must be assigned a value before
+                # use.
+                # Note that execution will not continue if VariableVectorAlgebra
+                # manager throws an exception over an impossible vectorial operation.
+                var_name = line.split('new ')[1].strip()
+                if not var_name:
+                    raise BadFormatStyle(self.format_path, f"Incorrect data declaration"
+                                         + " in action segment at line " + str(line_number))
+
+                    # Variable has no data to be initialized with, hence it cannot be used
+                    # as rhs.
+                self.variables[var_name] = None
+                self.var_vector.add_variable(var_name, [], self.var_vector.take_type("Numeric"))
+
+                # Support for immediate initialization.
+                if '=' in line:
+                    self.var_vector.execute_line(line.split('new')[1], line_number)
+
+            else:
+                self.var_vector.execute_line(line, line_number)
 
     def print_data(self):
         print(self.rows)
