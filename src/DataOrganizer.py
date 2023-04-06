@@ -2,8 +2,8 @@ import csv  # CSV data from River
 import math  # Supported package
 
 from Errors import *  # Errors
-from VariableVectorAlgebra import *
-from re import findall, split  # Regex
+from VariableVectorAlgebra import *  # Vectorial algebra
+from DatasetPlanner import *  # Make plans
 
 
 class DataOrganizer:
@@ -340,33 +340,41 @@ class DataFormatReader:
 
                     new_csv_file.writelines(lines)
 
+    def parse_make(self):
 
-    # Return ending statement.
-    def make_plan(self)->str:
-        NotImplemented
-        return 0
-
-    def parse_plan(self):
-
-        plan_sec = self.rows.index('.plan\n') + 1
-        compiling_plan = False
-
+        plan_sec = self.rows.index('.make\n') + 1
         current_row = plan_sec
+
+        plan_registered = {}
+
         while current_row < len(self.rows):
             statement = self.rows[current_row]
 
             if 'begin plan' in statement:
-                current_row = self.make_plan(current_row)
+                plan_name = statement.split('begin plan')[1]
+                if 'expecting' in plan_name:
+                    plan_name = plan_name.split('expecting')[0]
+
+                # Delegate the building of the actual plan to a DatasetPlanner Object,
+                # then find the end of the declaration and proceed in parsing simpler
+                # statements.
+                plan_registered[plan_name] = DatasetPlanner(self.rows[current_row:], self.var_vector)
+                plan_registered[plan_name].parse()
+                current_row = next(i for i in range(current_row, len(self.rows)) if 'end plan' in self.rows[i])
+
             elif 'compile' in statement:
 
                 plan_label = statement.split('compile')[1].split('into')[0]
                 plan_file_label = statement.split('into')[1].strip()
+
+            elif 'log' in statement:
+                ModuleNotFoundError
+            elif 'set' in statement:
+                NotImplemented
+            else:
                 NotImplemented
 
-
-
-
-
+            current_row = current_row + 1
 
 
     def print_data(self):
@@ -377,6 +385,7 @@ class DataFormatReader:
         data = []
 
         # Cut head of line
+        # print(line, format_string)
         if format_string[0]:
             line = line.split(format_string[0], 1)[1]
         for sep in format_string[1:]:
@@ -402,7 +411,7 @@ class DataFormatReader:
 
 
 if __name__ == '__main__':
-    Parse_data = 'C:/Users/picul/OneDrive/Documenti/RiverDataOrganizer.txt'
+    Parse_data = 'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
     Parse_datat = 'C:/Users/picul/OneDrive/Documenti/riverscript.txt'
 
     # Debug data, not present in production
@@ -416,3 +425,4 @@ if __name__ == '__main__':
     dataFormat.parse_part_two()
     dataFormat.act()
     dataFormat.parse_sap()
+    dataFormat.parse_make()

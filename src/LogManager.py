@@ -1,30 +1,26 @@
 from Errors import IncorrectLogFile
 
-LogFile = 'C:/Users/picul/OneDrive/Documenti/RiverLogFile.txt'
-TextSeparator = '**********************************************\n'
-
 
 class LogManager:
-    def __init__(self, log_file):
-        try:
-            self.log_file = log_file
-            self.log_element = open(LogFile, 'w')
-        except Exception as BroadError:
-            raise IncorrectLogFile(self.log_element)
+    def __init__(self):
+        self.log_buffer = ""
 
-    def close(self):
-        self.log_element.close()
+    def flush(self):
+        self.log_buffer = ""
 
     def log(self, text):
-        try:
-            self.log_element.write(text + '\n')
-        except Exception as GenericError:
-            self.close()
-            raise IncorrectLogFile(self.log_file)
+        self.log_buffer += '\n' + text
 
     def separate(self):
-        self.log(TextSeparator)
+        self.log("\n*************\n")
 
     def log_n(self, *var_arg):
         for arg in var_arg:
             self.log(arg)
+
+    def write_logs(self, into):
+        try:
+            with open(into, "w") as log_file:
+                log_file.write(self.log_buffer)
+        except FileNotFoundError:
+            raise IncorrectLogFile(into)

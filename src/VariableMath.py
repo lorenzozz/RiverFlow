@@ -122,3 +122,8 @@ def vec_interval(a, b, n):
     :return: linear range between [a,b] with n samples
     """
     return np.linspace(a, b, n)
+
+
+def vec_truncate(x, n):
+    a = x[:n]
+    return a

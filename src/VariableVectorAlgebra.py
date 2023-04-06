@@ -93,6 +93,7 @@ class VariableVectorManager:
              "interpola_outlier": vec_inter_outlier,
              "interval": vec_interval,
              "lunghezza": np.size,
+             "tronca": vec_truncate,
              "gaussiana": "gaussiana",  # Label
              "esponenziale": "esponenziale",  # Label
              "uniforme": "uniforme",  # Label
