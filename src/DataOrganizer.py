@@ -77,9 +77,9 @@ class DataFormatReader:
         # Part 2, we can find the index of the empty element '\n' inside self.rows
         # to find where the declaration section ends
 
-        if '\n' in self.rows:
-            decl_section = self.rows[:self.rows.index('\n')]
-            if len(decl_section) % 2:
+        if '.decl\n' in self.rows:
+            decl_section = self.rows[1:self.rows.index('.res\n')]
+            if len([el for el in decl_section if el != '\n']) % 2:
                 raise BadFormatStyle(self.format_path, "Bad pairing of declarations: " +
                                      "mismatched pair in declaration section ")
 
@@ -91,8 +91,8 @@ class DataFormatReader:
                 arg_list = arg_list.strip('\n')
 
                 # Rule out malformed expressions
-                if 'file' not in file_token:
-                    raise BadFormatStyle(self.format_path, "Missing FILE token at line " +
+                if 'source_file' not in file_token:
+                    raise BadFormatStyle(self.format_path, "Missing source_file token at line " +
                                          source_line)
 
                 if file_token.count('<') + file_token.count('>') != 2:
@@ -100,8 +100,7 @@ class DataFormatReader:
                                                             "or use of illegal character '>', '<' ")
 
                 file_path = file_token.split('<')[1].split('>')[0].strip(' ')
-                file_label = file_token.split('file')[1].split(':')[0].strip(' ')
-
+                file_label = file_token.split('source_file', 1)[1].split(':')[0].strip(' ')
                 if not file_label or file_label == '':
                     raise BadFormatStyle(self.format_path, f"File label required for FILE {file_path}"
                                                            " at line " + source_line)
@@ -118,6 +117,7 @@ class DataFormatReader:
                 # Note that while labels occur between two occurrences of a '{'/'}' parenthesis, on
                 # odd positions, format separators occur on even positions of the split_arg_list
                 variable_names = split_arg_list[1::2]
+
                 self.formats[file_label] = split_arg_list[::2]
                 self.files_arglists[file_label] = variable_names
 
@@ -128,8 +128,8 @@ class DataFormatReader:
                 self.variables.update({name: None for name in variable_names})
 
         else:
-            raise MissingSection(self.format_path, " Incorrect separation of declaration" +
-                                 " section in format file ( missing newline \\n) ")
+            raise MissingSection(self.format_path, "Incorrect separation of declaration" +
+                                 " section in format file (missing .decl?) ")
 
     def create_variable_vectors(self):
 
@@ -158,7 +158,7 @@ class DataFormatReader:
 
     def parse_part_two(self):
 
-        decl_section_marker = self.rows.index('\n') + 1
+        decl_section_marker = self.rows.index('.res\n') + 1
         act_section_marker = self.rows[decl_section_marker:].index('\n') + decl_section_marker
 
         if not act_section_marker:
@@ -221,9 +221,9 @@ class DataFormatReader:
         act_section = self.rows[act_sec + 1:sap_sec]
         act_section.remove('\n')
 
-        if 'ACT:' not in act_section[0]:
+        if '.act' not in act_section[0]:
             raise MissingSection(self.format_path, " Incorrect separation of acting" +
-                                 " section in format file (missing ACT:?) ")
+                                 " section in format file (missing .act?) ")
 
         self.var_vector.load_grammar_mapper()
         self.var_vector.change_error_mode(no_except)
@@ -280,9 +280,7 @@ class DataFormatReader:
 
         save_files = {}
         sap_sec = self.rows.index('.sap\n')
-        next_sec = -1
-        for line in [li for li in self.rows[sap_sec + 1:next_sec] if li != '\n']:
-
+        for line in [li for li in self.rows[sap_sec + 1:] if li != '\n']:
             line_number = str(self.rows.index(line))
 
             # Do not parse comments.
@@ -295,7 +293,7 @@ class DataFormatReader:
                     raise BadSaveFile(None, "Incorrect declaration of save file, missing '=' "
                                             "token at line " + line_number)
 
-                save_files[file_name] = line.split('\"')[1].split('\"')[0].strip()
+                save_files[file_name] = line.split('\"')[1].strip()
             elif 'save' in line:
                 # Save requested variables with indicate format. a ';' signals csv
                 # to separate into different columns, the rest of the characters are taken
@@ -314,21 +312,27 @@ class DataFormatReader:
                 # Attempting to write a save file with variables of different
                 # dimension is nonsense. Find any such occurrence and issue an
                 # error
-                var_requested = [el for sl in format_expression.split('}') for el in sl.split('{')][1::2]
-                print(var_requested)
+                total = [el for sl in format_expression.split('}') for el in sl.split('{')]
+                var_requested = total[1::2]
 
                 var_dims = [self.var_vector.variables_dims[var] for var in var_requested]
-                print(var_dims)
 
                 if var_dims.count(var_dims[0]) != len(var_dims):
                     raise IncompatibleVecSizes(file_requested, "Cannot perform" +
                                                " operations with vectors of different sizes at line" + line_number)
 
                 with open(save_files[file_requested], "w") as new_csv_file:
-                    csv_writer = csv.writer(new_csv_file)
-                    NotAssignmentExpression
+                    indices = [total.index(var) for var in var_requested]
+                    all_data_involved = [self.var_vector.get_variable(var) for var in var_requested]
 
-        print(save_files)
+                    lines = []
+                    for pack in zip(*all_data_involved):
+                        for i, val in zip(indices, pack):
+                            total[i] = str(val)
+                        replace = ''.join(total) + '\n'
+                        lines.append(replace)
+
+                    new_csv_file.writelines(lines)
 
     def parse_plan(self):
         NotImplemented
@@ -339,7 +343,11 @@ class DataFormatReader:
     @staticmethod
     def parse_csv_line(format_string, line):
         data = []
-        for sep in format_string:
+
+        # Cut head of line
+        if format_string[0]:
+            line = line.split(format_string[0], 1)[1]
+        for sep in format_string[1:]:
             if sep:
                 line = line.split(sep, 1)
                 data.append(line[0])
@@ -352,29 +360,26 @@ class DataFormatReader:
     def parse_file(self, label):
 
         with open(self.input_files[label], "r") as csv_file:
-            lines = csv.reader(csv_file, dialect='excel')
-            if csv.Sniffer().has_header(csv_file.read(512)):
-                lines.__next__()  # Glance over first line
+            lines = csv.reader(csv_file, dialect='excel', delimiter=';')
 
-            data = [self.parse_csv_line(self.formats[label], line[0]) for line in lines]
+            if csv.Sniffer().has_header(csv_file.readline()):
+                lines.__next__()  # Glance over first\ line
 
+            data = [self.parse_csv_line(self.formats[label], ';'.join(line)) for line in lines]
         return data
 
 
 if __name__ == '__main__':
     Parse_data = 'C:/Users/picul/OneDrive/Documenti/RiverDataOrganizer.txt'
+    Parse_datat = 'C:/Users/picul/OneDrive/Documenti/riverscript.txt'
+
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
-    DataOrg = DataOrganizer(DataFolderPath + CSVRiverPath)
-    DataOrg.open_data()
-    DataOrg.extract_data()
-
     dataFormat = DataFormatReader(Parse_data)
 
     dataFormat.create_data()
-    # dataFormat.print_data()
     dataFormat.parse_part_one()
     dataFormat.parse_part_two()
     dataFormat.act()

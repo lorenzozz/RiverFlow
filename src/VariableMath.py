@@ -1,27 +1,40 @@
-from enum import Enum
 import numpy as np
 
 
-class RandomDist(Enum):
-    """ Map from virtual distinction between distribution to logical different
-    functions for computing """
-    Normal = 0,
-    Logistic = 1,
-    Poisson = 2,
-    Uniform = 3
-
-
 def vec_bool_to_num(x, dic):
-
+    """
+    Maps a categorical/boolean data onto a dictionary
+    :param x: target vector
+    :param dic: dictionary contaning mapping values for each category
+    :return: the vector mapped onto the numbers
+    """
     return np.array([dic[str_val] for str_val in x])
 
 
-def vec_inter_outlier():
-    NotImplemented
+def vec_inter_outlier(x, m):
+    """
+    Reference: https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm
+    :param x: vector
+    :param m: algorithm parameter
+    :return: vector with outliers brought to the mean
+    """
+    d = np.abs(x - np.median(x))
+    m_dev = np.median(d)
+    s = d / m_dev if m_dev else np.zero(len(d))
+    x[s > m] = np.mean(x) * (s / m)
+    return x
 
 
-def vec_zero_outliers():
-    NotImplemented
+def vec_zero_outliers(x, n):
+    """
+    Zeroes out the elements such that x[i] > std*n
+
+    :param x: the target vector
+    :param n: the amount of stds
+    :return: the vector with its outliers zeroed out
+    """
+    dev_stand = np.std(x)
+    x[x > n * dev_stand] = 0
 
 
 def vec_zero_mean(x):
@@ -52,12 +65,37 @@ def vec_std(x):
     return np.mean(x)
 
 
-def vec_add_noise():
-    NotImplemented
+def vec_add_noise(x, distribution, *args):
+    """
+    Adds noise of the requested distribution, mean and std (varying on distribution)
+    to the parameter vector x
+    :param x: target vector
+    :param distribution: name of distribution
+    :param args: situational arguments
+    :return: vector with noise added
+    """
+    noise_x = None
+    if distribution == "gaussiana":
+        noise_x = x + args[0]+np.random.randn(np.size(x))*args[1]
+    elif distribution == "esponenziale":
+        noise_x = x + np.random.exponential(args[0], np.size(x))
+    elif distribution == "uniform":
+        noise_x = x + np.random.uniform(args[0], args[1], np.size(x))
+    return noise_x
 
 
-def vec_zero_with_prob():
-    NotImplemented
+def vec_zero_with_prob(x, probability):
+    """
+    Zeroes out random elements in p with probability <probability>
+    :param x: target vector
+    :param probability: probability that a random element x[i] is zeroed
+    :return: the result vector
+    """
+    indices = np.random.choice(np.arange(np.size(x)), replace=False,
+                               size=int(np.size(x) * probability))
+    x[indices] = 0
+
+    return x
 
 
 def vec_discrete(x, bins, val_map):

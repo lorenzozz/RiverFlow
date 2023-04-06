@@ -19,7 +19,15 @@ class VariableVectorManager:
         self.grammar = None
 
     def add_variable(self, var_name, py_data, as_type):
-        self.variables[var_name] = np.array(py_data).astype(as_type)
+        try:
+            self.variables[var_name] = np.array(py_data).astype(as_type)
+        # Solve missing datapoint by just putting them equal to zero.
+        except ValueError:
+            intermediate = np.array(py_data)
+            intermediate[intermediate == ''] = '0'
+
+            self.variables[var_name] = intermediate.astype(as_type)
+
         self.variables_dims[var_name] = np.size(self.variables[var_name])
         if self.grammar:
             self.grammar[var_name] = self.variables[var_name]
@@ -70,14 +78,17 @@ class VariableVectorManager:
 
         # Predefined function aliases.
         self.grammar = \
-            {"Discretizza": vec_discrete,
-             "AggiungiRumore": vec_add_noise,
-             "DaCategoricoANumero": vec_bool_to_num,
-             "MediaZero": vec_zero_mean,
-             "Media": vec_mean,
-             "DevStand": vec_std,
-             "AzzeraOutlier": vec_zero_outliers,
-             "InterpolaOutlier": vec_inter_outlier
+            {"discretizza": vec_discrete,
+             "aggiungi_rumore": vec_add_noise,
+             "da_categorico_a_numero": vec_bool_to_num,
+             "media_zero": vec_zero_mean,
+             "media": vec_mean,
+             "dev_stand": vec_std,
+             "azzera_outlier": vec_zero_outliers,
+             "interpola_outlier": vec_inter_outlier,
+             "gaussiana": "gaussiana",
+             "esponenziale": "esponenziale",
+             "uniforme": "uniforme"
              }
         self.grammar.update(self.variables)
 
