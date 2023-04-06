@@ -111,3 +111,14 @@ def vec_discrete(x, bins, val_map):
     val_map.insert(0, None)
     result = np.array([val_map[map_val] for map_val in result])
     return result
+
+
+def vec_interval(a, b, n):
+    """
+    Returns n evenly spaced sample from linear interval[a,b]
+    :param a: starting value
+    :param b: ending value
+    :param n: amount of samples
+    :return: linear range between [a,b] with n samples
+    """
+    return np.linspace(a, b, n)

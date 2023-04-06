@@ -86,9 +86,11 @@ class VariableVectorManager:
              "dev_stand": vec_std,
              "azzera_outlier": vec_zero_outliers,
              "interpola_outlier": vec_inter_outlier,
-             "gaussiana": "gaussiana",
-             "esponenziale": "esponenziale",
-             "uniforme": "uniforme"
+             "interval": vec_interval,
+             "lunghezza": np.size,
+             "gaussiana": "gaussiana",  # Label
+             "esponenziale": "esponenziale",  # Label
+             "uniforme": "uniforme",   # Label
              }
         self.grammar.update(self.variables)
 

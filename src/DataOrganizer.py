@@ -171,6 +171,10 @@ class DataFormatReader:
         copy_action: list[tuple] = []
 
         for declaration in resolve_section:
+
+            if '#' in declaration:
+                declaration = declaration.split('#')[0]
+
             source_line = str(self.rows.index(declaration))
 
             if ':' in declaration:
