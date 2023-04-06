@@ -20,7 +20,12 @@ class ParenthesisMismatch(Exception):
         self.model_name = model_name
 
     def __str__(self):
-        return "Bad expression delimiters '}' in model <" +\
-            str(self.model_name) + "> declaration"
+        return "Bad expression delimiters '}' in model <" + str(self.model_name) + "> declaration"
 
 
+class VariableSliceRedefinition(Exception):
+    def __init__(self, var_id):
+        self.var_id = var_id
+
+    def __str__(self):
+        return "Multiple slice values for the same variable: " + selfvar_id

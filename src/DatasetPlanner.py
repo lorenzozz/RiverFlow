@@ -1,27 +1,147 @@
 from DatasetErrors import *
 from LogManager import *
+from VariableVectorAlgebra import VariableVectorManager
+
 import numpy as np  # Vector support, sliding view.
 import time  # dates comparison
 
 
 class Aligner:
 
-    def __init__(self, variables, aligning_variables):
-        self.variables = variables
-        self.alignment = aligning_variables
+    def __init__(self, var_vec, variables, aligning_variables):
+        self.variables: list[str] = variables
+        self.alignment: list[str] = aligning_variables
 
-        self.windows = [(0, 0) for _ in variables]
+        self.windows = {}
         # Upper alignment budget and Lower alignment budget are stored in the same tuple
-        self.budgets = [(0, 0) for _ in variables]
+        self.budgets = {}
+        self.var_vec: VariableVectorManager = var_vec
+        self.init_align = None
+
+        # Initialize the aligning underlying structure
+        self.create_alignment()
+
+        # Describes whether a variable must generate n-dimensional views over its values or
+        # single points
+        self.window_generation_type = {}
 
     @staticmethod
-    def date_equal(*dates, string):
-        time_dates = [time.strptime(date, string) for date in [*dates]]
-        return all(time_dates[0] == other_date for other_date in time_dates)
+    def get_formatted_date_equal(string):
+        def is_date_equal(*dates):
+            time_dates = [time.strptime(date, string) for date in [*dates]]
+            return all(time_dates[0] == other_date for other_date in time_dates)
+
+        return is_date_equal
 
     @staticmethod
     def index_equal(*numbers):
         all([numbers][0] == n_2 for n_2 in [numbers])
+
+    def wants(self, var_name, request: tuple):
+
+        # A variable's behaviour during model creation can only
+        # be specified once per model.
+
+        if var_name in self.window_generation_type.keys():
+            raise VariableSliceRedefinition(var_name)
+
+        # Window keeping algorithm:
+        # When a variable requests to keep a window to slide over the
+        # data array, it must be checked whether the variable has the ability
+        # to do so without influencing the behaviour of other variables.
+        # example:
+
+        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4, 5, 6, 7]
+        # Data2: [...], Data2_alignment : [4, 5, 6, 7]
+        # Alignment described:
+        # 0   1   2   3   4   5   6   7       window: (0, 4) bottom_align = 0
+        #     |---|---|---4   5   6   7       window: (2, 6) bottom_align = 2
+        #                 ^ Begin of transcription
+
+        # If data1 asks to keep a sliding window (e.g. 3) in the final model, there is no need
+        # to change the behaviour of data2, for there are enough values of Data1 before
+        # the beginning of the alignment to do so. Suppose now Data1 requests a window
+        # of length 4. We are now obliged to throw away Data2 point 4, as it simply does not
+        # have 4 values of data1 behind it.
+
+        # 0   1   2   3   4   5   6   7       window: (0, 4) bottom_align = 0
+        #     |---|---|---4---5   6   7       window: (2, 6) bottom_align = 2
+        #                     ^ Begin of transcription
+
+        budget = self.budgets[var_name]
+        for bound in range(2):
+            if request[bound] > self.budgets[var_name][bound]:
+                self.windows[var_name][bound] -= request[bound] - budget[bound]
+                self.budgets[var_name][bound] = 0
+            else:
+                self.budgets[var_name][bound] -= request[bound]
+
+    def add_target(self, target_var):
+        NotImplemented
+
+    def singleton(self, var_name):
+        if var_name in self.window_generation_type.keys():
+            raise VariableSliceRedefinition(var_name)
+        self.window_generation_type[var_name] = "Singleton"
+
+    def create_alignment(self):
+        print(self.alignment)
+        print(self.variables)
+
+        # Find first element present in all aligning elements.
+        var_data = [self.var_vec.get_variable(var) for var in self.alignment]
+        intersection = var_data[0]
+        for data in var_data:
+            intersection = np.intersect1d(data, intersection)
+
+        # Get bottom alignment, a mapped value describing how different
+        # vectors map onto each other in alignment
+
+        # example:
+        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
+        # Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
+        # Alignment described:
+        # 0   1   2   3   4                 window: (0, 4) bottom_align = 0
+        #         2   3   4   5   6         window: (2, 6) bottom_align = 2
+
+        bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in var_data]
+        self.init_align = max(bottom_aligns)
+        bottom_aligns = [self.init_align - el for el in bottom_aligns]
+
+        # Get top alignment, a mapped value describing the ceiling
+        # of the alignment
+
+        # example:
+        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
+        # Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
+        # Alignment described:
+        # 0   1   2   3   4                 window: (0, 4) top_align = 4
+        #         2   3   4   5   6         window: (2, 6) bottom_align = 6
+
+        sizes = [np.size(data) for data in var_data]
+        up_locs = [size + bottom for size, bottom in zip(sizes, bottom_aligns)]
+        min_up = min(up_locs)
+
+        # Create windows and budgets for each data source to use in
+        # windowing algorithm
+
+        # example:
+        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
+        # Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
+        # Alignment described:
+        # 0   1   2   3   4                 window: (0, 4)
+        #         2   3   4   5   6         window: (2, 6)
+        #
+        # Budgets are computed as follows
+        # INIT_ALIGN_BOTTOM = max(bottom-aligns)
+        # INIT_ALIGN_TOP = min(top-aligns)
+        # Bottom_budget[i] = INIT_ALIGN - bottom[i]
+        # Top_budget[i] = top[i] - INIT_ALIGN_TOP
+
+        self.windows = {var: [b, u] for b, u, var in zip(bottom_aligns, up_locs, self.variables)}
+        self.budgets = {var: [b, u] for b, u, var in zip([self.init_align - bot for bot in bottom_aligns],
+                                                         [top - min_up for top in up_locs], self.variables)}
+
 
 class DatasetPlanner:
     def __init__(self, raw_code, vector_var, name):
@@ -31,8 +151,10 @@ class DatasetPlanner:
                       "compression": False,
                       "error": None}
         self.logs = LogManager()
-        self.vec_vars = vector_var
+        self.vec_vars: VariableVectorManager = vector_var
         self.model_name = name
+
+        self.aligner = None
 
     def parse(self):
 
@@ -52,11 +174,10 @@ class DatasetPlanner:
         alignment_mode = None
 
         for statement in self.raw[:end_of_decl]:
-            print(statement)
             if 'align' in statement:
                 try:
-                    align_vars.append([v.strip() for v in statement.split('align')[1].split('against')[0].split(',')])
-                    align_factors.append([f.strip() for f in statement.split('against')[1].split('as')[0].split(',')])
+                    align_vars += [v.strip() for v in statement.split('align')[1].split('against')[0].split(',')]
+                    align_factors += [f.strip() for f in statement.split('against')[1].split('as')[0].split(',')]
                     alignment_mode = statement.split('as')[1].strip()
                     if 'format':
                         alignment_mode = alignment_mode.split('with')[0].strip()
@@ -64,7 +185,7 @@ class DatasetPlanner:
                 except Exception:
                     raise BadAlignmentCommand(statement)
 
-            if 'consider' in statement:
+            if 'consider x' in statement:
                 # A consider statement is unique per model declaration and should only
                 # occur after every alignment has been completed. Note that
                 # variables are permanently altered by alignment. That is to be expected
@@ -73,7 +194,9 @@ class DatasetPlanner:
                     raise BadAlignmentCommand(statement, "No alignment mode provided or no align format provided for "
                                                          "date alignment")
 
-
+                self.aligner = Aligner(self.vec_vars, align_vars, align_factors)
+            elif 'consider y' in statement:
+                NotImplemented
             else:
                 # Else assume statement is a composite description
                 # of a planning procedure. Just throw an error if nothing matches
@@ -88,7 +211,7 @@ class DatasetPlanner:
             # Error mode does not apply for semantic errors.
             raise IncorrectFieldName(field_name)
 
-    def compile(self, compression=False):
+    def compile(self):
         NotImplemented
 
     def log(self, log_file_path):
