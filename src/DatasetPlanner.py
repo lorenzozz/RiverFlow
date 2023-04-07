@@ -18,6 +18,7 @@ class Aligner:
         self.var_vec: VariableVectorManager = var_vec
         self.init_align = None
 
+        self.target_var = None
         # Initialize the aligning underlying structure
         self.create_alignment()
 
@@ -37,7 +38,7 @@ class Aligner:
     def index_equal(*numbers):
         all([numbers][0] == n_2 for n_2 in [numbers])
 
-    def wants(self, var_name, request: tuple):
+    def wants(self, var_name, request: list):
 
         # A variable's behaviour during model creation can only
         # be specified once per model.
@@ -76,8 +77,13 @@ class Aligner:
             else:
                 self.budgets[var_name][bound] -= request[bound]
 
+    def show_status(self):
+        print(self.windows)
+        print(self.budgets)
+
     def add_target(self, target_var):
-        NotImplemented
+        self.window_generation_type[target_var] = "Target"
+        self.target_var = target_var
 
     def singleton(self, var_name):
         if var_name in self.window_generation_type.keys():
@@ -172,20 +178,26 @@ class DatasetPlanner:
         align_factors = []
         align_format = None
         alignment_mode = None
+        target_variable = None
 
-        for statement in self.raw[:end_of_decl]:
+        plan = [li for li in self.raw[1:end_of_decl] if li not in {'{\n', '}\n'} and not str.isspace(li)]
+
+        for statement in plan:
+
+            statement = statement.strip() if '#' not in statement else statement.split('#')[0].strip()
+
             if 'align' in statement:
                 try:
                     align_vars += [v.strip() for v in statement.split('align')[1].split('against')[0].split(',')]
                     align_factors += [f.strip() for f in statement.split('against')[1].split('as')[0].split(',')]
                     alignment_mode = statement.split('as')[1].strip()
-                    if 'format':
+
+                    if 'format' in statement:
                         alignment_mode = alignment_mode.split('with')[0].strip()
                         align_format = statement.split('format')[1].strip()
                 except Exception:
                     raise BadAlignmentCommand(statement)
-
-            if 'consider x' in statement:
+            elif 'consider x' in statement:
                 # A consider statement is unique per model declaration and should only
                 # occur after every alignment has been completed. Note that
                 # variables are permanently altered by alignment. That is to be expected
@@ -195,13 +207,34 @@ class DatasetPlanner:
                                                          "date alignment")
 
                 self.aligner = Aligner(self.vec_vars, align_vars, align_factors)
-            elif 'consider y' in statement:
-                NotImplemented
+            elif 'make' in statement:
+                target_variable = statement.split('make')[1].split('the')[0].strip()
+
+            elif 'pair' in statement:
+                if not self.aligner:
+                    raise BadAlignmentCommand(statement, "Plan and x declaration must precede the binding of x and "
+                                                         "the target")
+
+                self.aligner.add_target(target_variable)
+
             else:
                 # Else assume statement is a composite description
                 # of a planning procedure. Just throw an error if nothing matches
                 # a known expression. Again, error mode does not apply to semantic.
-                NotImplemented
+                if 'take' not in statement:
+                    raise BadAlignmentCommand(statement, f"Incorrect planning statement: \"{statement}\"")
+
+                request = [0, 0]
+                var_name = statement.split('from')[1].strip()
+                if 'before' in statement:
+                    request[0] = int(statement.split('take')[1].split('before')[0].strip())
+                if 'after' in statement:
+                    request[1] = int(statement.split('and')[1].split('after')[0].strip())
+                else:
+                    self.aligner.singleton(var_name)
+                    continue
+
+                self.aligner.wants(var_name, request)
 
     def change_field(self, field_name, new_val):
 

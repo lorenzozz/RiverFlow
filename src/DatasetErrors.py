@@ -28,4 +28,4 @@ class VariableSliceRedefinition(Exception):
         self.var_id = var_id
 
     def __str__(self):
-        return "Multiple slice values for the same variable: " + selfvar_id
+        return "Multiple slice values for the same variable: " + self.var_id

@@ -354,6 +354,7 @@ class DataFormatReader:
                 plan_name = statement.split('begin plan')[1]
                 if 'expecting' in plan_name:
                     plan_name = plan_name.split('expecting')[0]
+                plan_name = plan_name.strip()
 
                 # Delegate the building of the actual plan to a DatasetPlanner Object,
                 # then find the end of the declaration and proceed in parsing simpler
@@ -367,15 +368,18 @@ class DataFormatReader:
                 plan_label = statement.split('compile')[1].split('into')[0]
                 plan_file_label = statement.split('into')[1].strip()
 
-            elif 'log' in statement:
-                ModuleNotFoundError
+            elif 'log ' in statement:
+                plan_label = statement.split('log')[1].split('into')[0].strip()
+                log_file = statement.split('into')[1].strip()
+
+                plan_registered[plan_label].log(log_file)
+
             elif 'set' in statement:
                 NotImplemented
             else:
                 NotImplemented
 
             current_row = current_row + 1
-
 
     def print_data(self):
         print(self.rows)
