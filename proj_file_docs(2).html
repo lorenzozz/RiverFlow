@@ -1,0 +1,315 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>proj_file_docs</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="struttura-del-file-di-progetto">Struttura del file di progetto</h1>
+<p>I file di progetto permettono di manipolare velocemente e molto liberamente i campi dati importati per il loro uso nel modello. Il file di progetto si articola in cinque sezioni: .decl, .res, .act, .sap, .make, che stanno rispettivamente declarative, resolutive, active, save &amp; plan, make.<br>
+Ciascuna sezione possiede un numero limitato ma sufficiente di operazioni per manipolare i dati. In particolare, il file di progetto contiene sia sezioni interpretate dal codice in src (molto liberamente), sia sezioni interpretate dall’interprete di Python stesso.</p>
+<pre class=" language-mermaid"><svg id="mermaid-svg-XHXmV88oHBIzYzm8" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="159.43331909179688" style="max-width: 535.4083251953125px;" viewBox="0 0 535.4083251953125 159.43331909179688"><style>#mermaid-svg-XHXmV88oHBIzYzm8{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#000000;}#mermaid-svg-XHXmV88oHBIzYzm8 .error-icon{fill:#552222;}#mermaid-svg-XHXmV88oHBIzYzm8 .error-text{fill:#552222;stroke:#552222;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-thickness-normal{stroke-width:2px;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-svg-XHXmV88oHBIzYzm8 .marker{fill:#666;stroke:#666;}#mermaid-svg-XHXmV88oHBIzYzm8 .marker.cross{stroke:#666;}#mermaid-svg-XHXmV88oHBIzYzm8 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-svg-XHXmV88oHBIzYzm8 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#000000;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster-label text{fill:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster-label span{color:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 .label text,#mermaid-svg-XHXmV88oHBIzYzm8 span{fill:#000000;color:#000000;}#mermaid-svg-XHXmV88oHBIzYzm8 .node rect,#mermaid-svg-XHXmV88oHBIzYzm8 .node circle,#mermaid-svg-XHXmV88oHBIzYzm8 .node ellipse,#mermaid-svg-XHXmV88oHBIzYzm8 .node polygon,#mermaid-svg-XHXmV88oHBIzYzm8 .node path{fill:#eee;stroke:#999;stroke-width:1px;}#mermaid-svg-XHXmV88oHBIzYzm8 .node .label{text-align:center;}#mermaid-svg-XHXmV88oHBIzYzm8 .node.clickable{cursor:pointer;}#mermaid-svg-XHXmV88oHBIzYzm8 .arrowheadPath{fill:#333333;}#mermaid-svg-XHXmV88oHBIzYzm8 .edgePath .path{stroke:#666;stroke-width:1.5px;}#mermaid-svg-XHXmV88oHBIzYzm8 .flowchart-link{stroke:#666;fill:none;}#mermaid-svg-XHXmV88oHBIzYzm8 .edgeLabel{background-color:white;text-align:center;}#mermaid-svg-XHXmV88oHBIzYzm8 .edgeLabel rect{opacity:0.5;background-color:white;fill:white;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster rect{fill:hsl(210,66.6666666667%,95%);stroke:#26a;stroke-width:1px;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster text{fill:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster span{color:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(-160,0%,93.3333333333%);border:1px solid #26a;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-svg-XHXmV88oHBIzYzm8:root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#mermaid-svg-XHXmV88oHBIzYzm8 flowchart{fill:apa;}</style><g><g class="output"><g class="clusters"></g><g class="edgePaths"><g class="edgePath LS-A LE-B" style="opacity: 1;" id="L-A-B"><path class="path" d="M109.55000305175781,79.71665954589844L134.5500030517578,79.71665954589844L159.5500030517578,79.71665954589844" marker-end="url(https://stackedit.io/app#arrowhead245)" style="fill:none"></path><defs><marker id="arrowhead245" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-B LE-C" style="opacity: 1;" id="L-B-C"><path class="path" d="M251.28334045410156,79.71665954589844L276.28334045410156,79.71665954589844L301.7833412170409,80.21665954589844" marker-end="url(https://stackedit.io/app#arrowhead246)" style="fill:none"></path><defs><marker id="arrowhead246" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-C LE-D" style="opacity: 1;" id="L-C-D"><path class="path" d="M365.9057995404085,62.964127024539295L407.65833282470703,31.35832977294922L432.65833282470703,31.35832977294922" marker-end="url(https://stackedit.io/app#arrowhead247)" style="fill:none"></path><defs><marker id="arrowhead247" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-C LE-E" style="opacity: 1;" id="L-C-E"><path class="path" d="M365.905798661541,97.4691914202461L407.65833282470703,128.07498931884766L451.7583312988281,128.07498931884766" marker-end="url(https://stackedit.io/app#arrowhead248)" style="fill:none"></path><defs><marker id="arrowhead248" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g></g><g class="edgeLabels"><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-A-B" class="edgeLabel L-LS-A' L-LE-B"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-B-C" class="edgeLabel L-LS-B' L-LE-C"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-C-D" class="edgeLabel L-LS-C' L-LE-D"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-C-E" class="edgeLabel L-LS-C' L-LE-E"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" style="opacity: 1;" id="flowchart-A-1100" transform="translate(58.775001525878906,79.71665954589844)"><rect rx="0" ry="0" x="-50.775001525878906" y="-23.35832977294922" width="101.55000305175781" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-40.775001525878906,-13.358329772949219)"><foreignObject width="81.55000305175781" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">declaration</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-B-1101" transform="translate(205.4166717529297,79.71665954589844)"><rect rx="0" ry="0" x="-45.866668701171875" y="-23.35832977294922" width="91.73333740234375" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-35.866668701171875,-13.358329772949219)"><foreignObject width="71.73333740234375" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">resolution</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-C-1103" transform="translate(341.9708366394043,79.71665954589844)"><polygon points="40.687495422363284,0 81.37499084472657,-40.687495422363284 40.687495422363284,-81.37499084472657 0,-40.687495422363284" transform="translate(-40.687495422363284,40.687495422363284)" class="label-container"></polygon><g class="label" transform="translate(0,0)"><g transform="translate(-11.849998474121094,-13.358329772949219)"><foreignObject width="23.699996948242188" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Act</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-D-1105" transform="translate(480.03333282470703,31.35832977294922)"><rect rx="0" ry="0" x="-47.375" y="-23.35832977294922" width="94.75" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-37.375,-13.358329772949219)"><foreignObject width="74.75" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Save&amp;Plan</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-E-1107" transform="translate(480.03333282470703,128.07498931884766)"><rect rx="0" ry="0" x="-28.275001525878906" y="-23.35832977294922" width="56.55000305175781" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-18.275001525878906,-13.358329772949219)"><foreignObject width="36.55000305175781" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Make</div></foreignObject></g></g></g></g></g></g></svg></pre>
+<p>Mentre le sezioni .decl, .res, .act definiscono variabili valide globalmente (eccezione fatta per i file di sorgente), le variabili introdotte in .sap e .make sono uniche per ciascuno dei due moduli.<br>
+Questo voldire che una variabile dichiarata in un formato in .decl sarà disponibile in .act, una variabile dichiarata per la prima volta in .act non sarà disponibile in .res, e una variabile dichiarata in .make non sarà disponibile in .sap</p>
+<h1 id="sezione-.decl">Sezione .decl</h1>
+<p>La sezione .decl del file di intestazione per la manipolazione di dataset è in linea di principio un elenco delle fonti di provenienza dei dati.</p>
+<p>Alla parola chiave .decl segue un elenco dei file di ingresso dei vari campi nel modello, in questo modo</p>
+<pre><code>.decl
+source_file Sample_file = "your/path"
+[...]
+</code></pre>
+<p>A ogni file specificato è associata una stringa di formato. E’ obbligatorio specificare un formato per ogni file di sorgente. La stringa di formato è presa letteralmente, raccogliendo ogni carattere a eccezione del CR-LF ‘\n’.</p>
+<pre><code>.decl
+source_file Sampe_file = "sample/path"
+{ID1};{ID2}
+</code></pre>
+<p>La stringa di formato è composta dalla concatenazione di uno o più id racchiusi fra i caratteri  ‘}’ e ‘{’. I caratteri inseriti fra due token di id {ID} vengono comparati con il formato effettivo nel file per separare i token utili da caratteri di formato. Una stringa di formato incorretta è un errore irrecuperabile nel caricamento di un file. Alcuni caratteri hanno un significato speciale, ad esempio il carattere ‘;’ significa che gli ID appartengono a colonne diverse nel dialetto CSV di Excel.</p>
+<p>Volendo ad esempio importare da un file di testo in CSV-’;’ del tipo</p>
+<blockquote>
+<p>Employee;Status;Stipendio;Data<br>
+Luca;Direttore;100;2015/11/3<br>
+Bossi;Matematico;200;2012/10/4<br>
+Palmese;Ingegnere;0;2021/3/2</p>
+</blockquote>
+<p>si deve creare un’intestazione del tipo</p>
+<pre><code>source_file Employee_data = "file/path"
+{Nome};{Posizione};{Stipendio};{Anno}/{Mese}/{Giorno}
+</code></pre>
+<p>Si noti come in questo modo è possibile separare dati che altrimenti sarebbero stati inseriti nello stesso campo in Excel e assegnarli a dei nomi manipolabili.<br>
+Le variabili così nominate vengono estratte e poste in dei vettori di lunghezza n, con n il numero di righe nel file di sorgente.</p>
+<pre><code>&gt;&gt; Nome
+&gt;&gt; [Luca, Bossi, Palmese]
+&gt;&gt; Stipendio
+&gt;&gt; [200, 200, 0]
+</code></pre>
+<p>Gli ID definiti nella sezione di .decl fanno parte delle variabili modificabili nelle sezioni successive. In particolare, tutti gli ID definiti nella sezione di dichiarazione devono essere risolti nella sezione di risolvimento .res. Una targhetta non risolta porta ad un errore fatale del programma, in quanto non è possibile assegnargli un tipo di dato nell’interprete interno.</p>
+<p><s>Oltre ai file di origine è possibile caricare modelli precedentemente costruiti</s> ( non ancora implementato )  per modificarne i campi e, in caso, aggiungere nuovi elementi all’allineamento.</p>
+<pre><code>model_file ModelloSample = "path/model"
+</code></pre>
+<p>La stringa di formato di un modello è differente da quella di un file di sorgente CSV. Questo perchè è necessario specificare le dimensioni dei vari campi all’interprete, in questo modo:</p>
+<pre><code>{7 ID1}{3 ID2}[...]
+</code></pre>
+<p>Anche le variabili inserite tramite formato del modello devono essere risolte nella sezione .res.<br>
+In particolare, nonostante siano variabili matriciali (‘alte’ il numero di righe del file, ‘larghe’ il numero di colonne indicato) valgono pressochè  le stesse operazioni predefinite per i vettori (a cui si aggiunge la possibilità di appendere ulteriori colonne o campi dati).</p>
+<h1 id="sezione-.res">Sezione .res</h1>
+<p>Nella sezione .res, le variabili dichiarate nella sezione di .decl vengono risolte. Risolvere una variabile vuol dire indicare all’interprete di che tipo di variabile si tratta, se numerica (keyword ‘numeric’) decimale, booleana (keyword ‘boolean’) categorica (ovvero, una fra una serie di parole (ad esempio, “Rosso”-“Verde”…) con keyword ‘categorical’), o intera (keyword ‘integer’).</p>
+<pre><code>.decl 
+source_file Impiegati = "sampl bne/path/"
+{Nome};{Posizione};[Stipendio}
+.res
+Nome: categorical
+Posizione: categorical
+Stipendio: numeric
+</code></pre>
+<p>Dichiarare erroneamente una variabile porta ad un errore fatale dell’interprete, in quanto durante il caricamento delle variabili internamento è necessario castare dalla stringa letta in CVS a un valore numerico, booleano o intero.</p>
+<p>All’interno della sezione .res è anche possibile dichiarare nuove variabili, che assumono lo stesso valore (in caso, vettoriale) e tipo ( categorico,ecc…) della variabile copiata.</p>
+<pre><code>.res
+Nome: categorical
+NomeDaModificare = Nome
+Stipendio: numeric
+</code></pre>
+<p>In questo modo è possibile copiare sia il valore che il tipo di una variabile al contempo.</p>
+<h1 id="sezione-.act">Sezione .act</h1>
+<p>Nella sezione .act è possibile manipolare le variabili dichiarate in precedenza e, eventualmente, dichiararne di nuove.<br>
+Le varibili in .act possono essere sia utilizzate nel .sap, che nel .make, ovvero possono essere sia salvate separatamente in un nuovo file di sorgente CSV sia essere inserite in un dataset.</p>
+<p>La sezione è quella che contiene il numero più alto di funzionalità. E’ possibile, in primo luogo, dichiarare nuove variabili (numeriche) tramite assegnamento. Si fa osservare che nonostante il tipo sia di default numerico, non è necessario effettuare nessun cast sulla copia, e per questo non ha importanza l’effettivo tipo della variabile o espressione copiata.<br>
+L’assegnamento può essere sia di una variabile singola, precedentemente definita e risolta, sia di un espressione complessa.</p>
+<pre><code>.act
+new SampleVar = DefinedVar
+new SampleVar2 = DefinedVar + func(DefinedVar2)
+</code></pre>
+<p>La valutazione di espressioni avviene tramite l’interprete di Python, e fa utilizzo dei simboli risolti in precedenza. In aggiunta dei simboli dichiarati dai file di sorgente ne sono disponibili diversi dalla libreria standard. In più, è possibile importarne di nuovi dallo scope globale.</p>
+<pre><code>.act
+import numpy as np
+import math as m
+new Var = np.arange(0,10)
+new Sqrt = math.sqrt(5)
+</code></pre>
+<p>Le funzioni della libreria standard offrono un ampia gamma di funzionalità, che elenchiamo di seguito:</p>
+<pre><code>discretizza(X, intervalli):
+""" Partendo da un vettore di elementi reali X, crea una
+sequenza di intervalli nella quale i valori reali 
+vengono suddivisi """
+&gt;&gt; X
+&gt;&gt; [0.4, 0.6, 0.1]
+&gt;&gt; discretizza(X, [0.2, 0.5, 1.0], [1, 2])
+&gt;&gt; [1, 2, 2]
+</code></pre>
+<p>La funzione discretizza(…) è buona per cambiare la distribuzione numerica dei dati, nota la loro disposizione iniziale.</p>
+<pre><code>aggiungi_rumore(X, distribuzione, parametri)
+""" Aggiunge rumore alla variabile(eventualmente vettoriale)
+X e ne ritorna il risultato con il rumore aggiunto.
+Ogni tipo di rumore ha una sua lista di parametri richiesti.
+I tipi di rumore supportati sono:
+
+gaussiano | di parametri (media, deviazione standard)
+esponenziale | di parametri (beta)
+uniforme | di parametri l'intervallo [a, b]
+</code></pre>
+<p>Il seguente esempio prende il parametro ‘Height’ e aggiunge alla variabile vettoriale un vettore casuale, di elementi estratti da una distribuzione normale di media (centro della campana) 1 e deviazione standard 3.</p>
+<pre><code>.act
+new VarConRumore = aggiungi_rumore(Height, gaussiana, 1, 3)
+</code></pre>
+<p>Le varie distribuzioni di rumore sono  miscelabili, è sufficiente chiamare più volte la funzione  con distribuzioni diverse.</p>
+<pre><code>media_zero(X)
+""" Restituisce il vettore X a cui è stato sottratto ad 
+ogni elemento di X la media di tutti gli elementi, in modo
+da avere un nuovo vettore a media zero."""
+</code></pre>
+<p>Il seguente snippet di codice prende la variabile indicata, aggiunge del rumore e azzera la media del vettore risultato (si fa notare che in questo modo <em>non</em> si azzera il vettore stesso)</p>
+<pre><code>.act
+new Var = aggiungi_rumore(Height, esponenziale, 3)
+Var = media_zero(Var)
+</code></pre>
+<p>Altre due funzionalità sono le seguenti</p>
+<pre><code>media(X)
+""" Ritorna la media della variabile (eventualmente,
+variabile vettoriale) """
+dev_stand(X) 
+""" Ritorna la deviazione standard della variabile (idem)
+</code></pre>
+<p>Si fa notare che media_zero() è solo un alias per</p>
+<pre><code>Id = Id - media(Id)
+</code></pre>
+<p>Alcune funzione si propongono di attenuare l’effetto di outlier, ad esempio</p>
+<pre><code>azzera_outlier(x, n)
+""" Azzera tutti i valori che superano di n volte la
+deviazione standard di X. Maggiore è n, più è alta la
+soglia di tolleranza """
+</code></pre>
+<p>e</p>
+<pre><code>interpola_outlier(X, m)
+""" Cerca di interpolare ad un valore non nullo ma 
+ragionevole gli elementi di x che superano una certa
+soglia di tolleranza, dipendente da m. Si fa notare che
+la dipendenza non è così diretta come per azzera_outlier(),
+ma che m è un parametro che controlla una scelta più
+complessa"""
+</code></pre>
+<p>Il seguente snippet modifica la variabile indicata, rimuovendo i valori che superano di 7 volte la deviazione standard della variabile, probabilmente frutto di errori (probabilmente!)</p>
+<pre><code>.act
+new AlteredVar = azzera_outlier(Variabile, 7)
+</code></pre>
+<p>Un ulteriore funzione utile è la seguente:</p>
+<pre><code>zero_con_probabilita(X, p)
+""" Ritorna un vettore x con gli stessi elementi di X, ma 
+in cui ogni elemento ha la probabilità p (fra 0 e 1)
+di essere stato azzerato"""
+</code></pre>
+<p>Una funzione simile è utile per simulare condizioni di dati mancanti o<br>
+inaffidabili.</p>
+<p>Altre funzioni invece offrono solo un ausilio, come le seguenti (di minore rilevanza)</p>
+<pre><code>lunghezza(X)
+""" Ritorna la lunghezza, intera, della variabile
+(eventualmente vettoriale)X."""
+
+tronca(X,n)
+""" Ritorna la variabile X troncata fino
+ all'n-esimo valore """
+ 
+interval(a,b,n)
+ """ Ritorna un vettore di lunghezza n contenente i valori
+ equispaziati compresi fra a e b."""
+ 
+da_categorico_a_numerico(x, dic)
+""" Ritorna un vettore in cui i valori di x sono stati
+mappati a valori numerici tramite il dizionario dic
+</code></pre>
+<p>Oltre alle funzionalità standard elencate, e ai pacchetti importabili, la sezione .act dispone della capacità di emettere sulla console i valori delle variabili tramite l’istruzione print(&lt;espressione&gt;), in questo modo</p>
+<pre><code>.act
+new Var = Media(Height)
+print(Var)
+
+&gt;&gt;Output: ...
+</code></pre>
+<p>In aggiunta, la sezione .act dà la possibilità di tracciare grafici delle variabili create e modificate, tramite la funzionalità della keyword plot.<br>
+Due versioni della keyword plot sono implementate. La prima ha la forma</p>
+<pre><code>plot Y against X
+</code></pre>
+<p>Le variabili X e Y viene dunque messa in un grafico scatterplot in cui i valori delle ascisse sono prese dalla variabile X, e le ordinate dalla variabile Y. È quindi evidente che non ha senso usare il precedente statement per variabili di lunghezza diversa, che dà quindi un errore fatale dell’interprete.<br>
+La seconda modalità è della forma</p>
+<pre><code>`plot Y`
+</code></pre>
+<p>Nessuna variabile sulle ascisse viene specificata, e la variabile Y è messa a grafico semplicemente con un asse fittizio  (come un grafico normale) mantenendo l’ordine degli elementi di Y.</p>
+<p>Prima di presentare alcuni esempi, si fa notare che la sezione di .act è puramente ‘assegnativa’. Questo voldire che nessuna variabile viene modificata per riferimento, ma solo per riassegnamento, ovvero uno statement del tipo</p>
+<pre><code>A = azzera_outlier(x)
+</code></pre>
+<p>non ha alcun effetto su x, ma solo su a!</p>
+<p>Alcuni esempi renderanno più chiara la sintassi (macchinosa) presentata.<br>
+Il seguente programma prende dal file DataFile i dati delle transizioni<br>
+in dollari, li converte in euro, ne traccia un grafico e ne stampa in uscita media e varianza</p>
+<pre><code>.decl
+source_file DataFile = "/path/.."
+{Transactions};{Date}
+.res
+Transactions: numeric
+Date: categorical
+.act
+new DatiInEuro = Transactions*0.91314
+plot DatiInEuro
+print(media(DatiInEuro))
+new Varianza = dev_stand(DatiInEuro)**2
+print(Varianza)
+</code></pre>
+<p>Si fa notare che l’operazione &lt;Transactions*0.91…&gt; è intesa vettorialmente, ovvero ciascun elemento di Transactions ne è affetto.</p>
+<p>Il seguente programma simula una condizione di inaffidabilità dei dati,<br>
+estraendo da DataFile il campo richiesto azzerando gli elementi con probabilità 0.03 e aggiungendo del rumore. In seguito compara i grafici dei dati iniziali e dei dati modificati.</p>
+<pre><code>.decl
+source_file DataFile = "/file/path/"
+{Data};{AltezzaFiume}
+.res
+Data: categorical
+AltezzaFiume: numeric
+.act
+new ZeroedData = zero_con_probabilita(AltezzaFiume, 0.03)
+ZeroedData = aggiungi_rumore(ZeroedData, esponenziale, 3)
+ZeroedData = aggiungi_rumore(ZeroedData, gaussiana, 2, 1)
+plot ZeroedData
+plot AltezzaFiume
+plot ZeroedData against AltezzaFiume
+</code></pre>
+<p>Si fa notare che usando l’istruzione di <code>plot Y against X</code> è anche possibile trovare delle dipendenze lineari fra i dati. Infatti, quando Y e X sono correlati (ma solo linearmente!) il loro grafico apparirà assimilabile (in senso ampio) ad una retta con un certo coefficiente angolare.</p>
+<p>L’ultimo esempio fa uso del pacchetto numpy per calcolare la somma di tutti gli elementi del campo GuadagniGiorno (e quindi il guadagno totale)</p>
+<pre><code>.decl
+source_file Guadagni = "/path/"
+{GuadagnoGiorno}
+.res
+GuadagnoGiorno: numeric
+.act
+
+import numpy as np
+new GuadagniTotali = np.sum(GuadagnoGiorno)
+print(GuadagniTotali)
+</code></pre>
+<p>È stato detto a sufficienza sulla sezione di .act. Passiamo ora alle due sezioni indipendenti di .sap e .make.</p>
+<h1 id="sezione-.sap">Sezione .sap</h1>
+<p>La sezione di .sap ha lo scopo di salvare e riorganizzare le variabili modificate nelle sezioni precedenti per usarle in futuro.<br>
+Esistono due funzionalità, in sostanza, della sezione .sap. La prima è quella di poter dichiarare dei file di salvataggio, save_file nel seguente modo</p>
+<pre><code>save_file SaveFile = "path/save_fileSample"
+save_file SecondSaveFile = "path/another"
+</code></pre>
+<p>La seconda è quella di poter salvare e riorganizzare (e riformattare) le variabili ottenute nelle tre sezioni precedenti.<br>
+Questo avviene tramite il comando di <code>save</code>, nel modo seguente</p>
+<pre><code>save "&lt;Format&gt;" into FileDichiarato
+</code></pre>
+<p>E’ necessario che un file sia stato dichiarato in passato per salvare il risultato al suo interno.<br>
+La stringa di formato è posta all’interno delle virgolette (e non può quindi contenere altre virgolette!) e presa letteralmente. Facciamo qualche esempio.</p>
+<pre><code>&gt;&gt; Height
+&gt;&gt; [100, 200, 100]
+&gt;&gt; Quality
+&gt;&gt; ["bronze", "gold", "silver"]
+
+save "{Height};tipo{Quality}" into Savefile
+</code></pre>
+<blockquote>
+<p>Savefile:<br>
+100;tipobronze<br>
+200;tipogold<br>
+100;tiposilver</p>
+</blockquote>
+<p>Lo statement di save è molto utile per salvare variabili modificate nella sezione di .act per poterle usare in modelli in futuro.</p>
+<h1 id="sezione-.make">Sezione .make</h1>
+<p>La sezione .make ha la sola funzionalità di creare un (o più) dataset seguendo le indicazioni date e con le variabili definite in precedenza.<br>
+Questa funzionalità è però anche la più complessa.<br>
+Prima di costruire un dataset coerente, è necessario procedere ad allineare tutte le variabili eterogenee che si vuole inserire nello stesso dalaset.<br>
+La sezione .make fa questo rispetto a un gruppo di variabili, nel codice sorgenti dette ‘di allineamento’, che vengono usate per creare degli indici virtuali a ogni vettore di variabili rispetto al gruppo di variabili.<br>
+La richiesta di una finestra temporale complessa ( che comprende di prendere k elementi prima di un certo valore e n elementi dopo ) rende più complesso questo processo.<br>
+Una descrizione completa del funzionamento del codice sorgente del .make (ancora in condizioni pietose) viene aggiunta come appendice e non viene approfondita oltre in questa sezione.</p>
+<p>L’elemento fondamentale della sezione .make è l’elemento di tipo <code>plan</code>. Per utilizzare questo elemento, vengono introdotti due tipi di file di salvataggio (che vengono distinti per imporre chiarezza nel codice prodotto), i file di log, <code>log_file</code>, e i file di salvataggio del piano, <code>plan_file</code>. Entrambi vengono dichiarati nello stesso modo di ciascun altra sezione, ovvero con</p>
+<pre><code>log_plan X = "..."
+plan_file Y = "..."
+</code></pre>
+<p>La costruzione di un elemento <code>plan</code> ha inizio con la keyword <code>begin plan</code>, seguita da una targhetta (nome) per il nuovo plan e da una precisazione non ancora sviluppata, la specificazione di errore <code>expecting &lt;error-type&gt;</code>. L’idea, ancora del tutto teorica!, è che l’interprete venga istruito di correggere eventuali errori di allineamento.<br>
+La tipica dichiarazione di un plan ha la forma</p>
+<pre><code>begin plan NewPlan expecting &lt;NotImplemented&gt;
+{
+...
+...statements...
+...
+}
+end plan
+</code></pre>
+<p>Possono esserci più di una dichiarazione di piano in uno stesso file di progetto, a patto che abbiano nomi diversi.</p>
+<p>Gli statement all’interno di una dichiarazione di piano sono di vario tipo.</p>
+<p>Una volta lette tutte le istruzioni interne alla disposizione del piano, è possibile modificare alcuni parametri di salvataggio tramite la keword <code>set</code> in questo modo</p>
+<pre><code>set &lt;param_name&gt; = &lt;new_value&gt;
+</code></pre>
+<p>I parametri del modelli attualmente specificati sono 4,<br>
+<code>x name, y name, compression, error</code>dei quali solo due (x name e y name) sono implementati. Quei due parametri descrivono il nome associato rispettivamente ai dati in ingresso (X) e ai dati in uscita (Output aspettato, Y) nel salvataggio del modello finale.</p>
+<p>E’ possibile anche accedere ai log generati dal modello durante la compilazione e la pianificazione attraverso la keyword di <code>log</code> nel seguente modo</p>
+<pre><code>log &lt;NomePiano&gt; into &lt;NomeLogFile&gt;
+</code></pre>
+<p>Tra i log generati dal piano ci sono i nomi dei dataset nel salvataggio del modello, il numero di data point (in senso generale, l’unità vettoriale che bisogna dare alla rete per avere un output), i cambiamenti avvenuti ai parametri e le variabili coinvolte nel modello. In futuro verrà implementata una descrizione generata automaticamente del modello, incluse le finestre di scorrimento utilizzate.<br>
+Infine è possibile compilare definitivamente, quindi generare le righe del dataset finale, con il comando</p>
+<pre><code>compile &lt;PlanName&gt; into &lt;PlanFile&gt;
+</code></pre>
+<p>Come nota tecnica, si fa notare che il salvataggio del modello avviene tramite np.savez. Si potrà accedere al dataset tramite la funzione np.load, o un oggetto DatasetLoader, utilizzando le targhette ‘x name’ e ‘y name’. Si segnala inoltre che il valore predefinito di questi ultimi due campi, se non alterato, è rispettivamente ‘x’ e ‘y’.</p>
+<h1 id="appendice-mantenimento-delle-finestre-di-scorrimento">Appendice: Mantenimento delle finestre di scorrimento</h1>
+</div>
+</body>
+
+</html>
