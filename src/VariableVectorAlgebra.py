@@ -49,8 +49,6 @@ class VariableVectorManager:
         try:
             if 'print(' in statement:
                 print(eval(statement.split('print(')[1].split(')')[0].strip(), self.grammar))
-            elif 'plot' in statement:
-                NotImplemented
             else:
                 ref_var = statement.split('=')[0].strip()
                 action = statement.split('=')[1].strip()
@@ -102,10 +100,13 @@ class VariableVectorManager:
 
     @staticmethod
     def take_type(var_type):
-        return {"categorical": str,
-                "boolean": str,
-                "numeric": numpy.float64,
-                "integer": numpy.int32}[var_type]
+        try:
+            return {"categorical": str,
+                    "boolean": str,
+                    "numeric": numpy.float64,
+                    "integer": numpy.int32}[var_type]
+        except KeyError:
+            raise VariableTypeUnspecified(f"Variable {var_type} has no specified type.")
 
     def add_package(self, package, pack):
         # Add passed package to grammar

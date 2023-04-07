@@ -21,7 +21,7 @@ def vec_inter_outlier(x, m):
     d = np.abs(x - np.median(x))
     m_dev = np.median(d)
     s = d / m_dev if m_dev else np.zero(len(d))
-    x[s > m] = np.mean(x) * (s / m)
+    x[s > m] = m*m_dev
     return x
 
 
@@ -33,8 +33,10 @@ def vec_zero_outliers(x, n):
     :param n: the amount of stds
     :return: the vector with its outliers zeroed out
     """
+    a = x
     dev_stand = np.std(x)
-    x[x > n * dev_stand] = 0
+    a[a > n * dev_stand] = 0
+    return a
 
 
 def vec_zero_mean(x):
@@ -79,7 +81,7 @@ def vec_add_noise(x, distribution, *args):
         noise_x = x + args[0]+np.random.randn(np.size(x))*args[1]
     elif distribution == "esponenziale":
         noise_x = x + np.random.exponential(args[0], np.size(x))
-    elif distribution == "uniform":
+    elif distribution == "uniforme":
         noise_x = x + np.random.uniform(args[0], args[1], np.size(x))
     return noise_x
 

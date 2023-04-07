@@ -23,3 +23,21 @@ class UnrecognizedPackageReference(Exception):
 
     def __str__(self):
         return self.expression
+
+
+class IncorrectPlotRequest(Exception):
+    def __init__(self, x, y, additional):
+        self.x = x
+        self.y = y
+        self.additional = additional
+
+    def __str__(self):
+        return f"Cannot plot {self.x} against {self.y}: " + self.additional
+
+
+class VariableTypeUnspecified(Exception):
+    def __init__(self, expression):
+        self.expression = expression
+
+    def __str__(self):
+        return self.expression

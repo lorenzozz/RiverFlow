@@ -1,5 +1,6 @@
 import csv  # CSV data from River
 import math  # Supported package
+from matplotlib import pyplot as plt
 
 from Errors import *  # Errors
 from VariableVectorAlgebra import *  # Vectorial algebra
@@ -164,7 +165,7 @@ class DataFormatReader:
 
         copy_action: list[tuple] = []
 
-        for declaration in resolve_section:
+        for declaration in [r for r in resolve_section if not str.isspace(r)]:
 
             if '#' in declaration:
                 declaration = declaration.split('#')[0]
@@ -198,6 +199,7 @@ class DataFormatReader:
                 else:
                     copy_action.append((new_var, reference))
             else:
+                print(declaration)
                 raise BadFormatStyle(self.format_path, f"Unrecognized token at line"
                                      + str(decl_section_marker))
 
@@ -271,6 +273,29 @@ class DataFormatReader:
 
                 else:
                     raise UnrecognizedPackageReference(f"Package {package_name} not recognized.")
+            elif 'plot' in line:
+                if 'against' in line:
+                    y_var = line.split('plot')[1].split('against')[0].strip()
+                    x_var = line.split('against')[1].strip()
+
+                    x_data = self.var_vector.get_variable(x_var)
+                    y_data = self.var_vector.get_variable(y_var)
+                else:
+                    y_var = line.split('plot')[1].strip()
+                    x_var = y_var
+
+                    x_data = np.arange(0, self.var_vector.get_sizeof_var(y_var))
+                    y_data = self.var_vector.get_variable(y_var)
+
+                if self.var_vector.get_sizeof_var(x_var) != self.var_vector.get_sizeof_var(y_var):
+                    raise IncorrectPlotRequest(x_var, y_var, "size do not match.")
+
+                plt.figure()
+                plt.plot(x_data, y_data)
+                plt.xlabel = x_var
+                plt.ylabel = y_var
+                plt.show()
+
             else:
                 self.var_vector.execute_line(line, line_number)
 
@@ -345,7 +370,6 @@ class DataFormatReader:
 
         while current_row < len(self.rows):
             statement = self.rows[current_row]
-
             if 'begin plan' in statement:
                 plan_name = statement.split('begin plan')[1]
                 if 'expecting' in plan_name:
@@ -359,7 +383,7 @@ class DataFormatReader:
                 plan_registered[plan_name].parse()
                 current_row = next(i for i in range(current_row, len(self.rows)) if 'end plan' in self.rows[i])
             # House-keeping file management commands
-            if '_file ' in statement:
+            elif '_file ' in statement:
 
                 file_path = statement.split('\"')[1].strip()
                 if 'plan' in statement:
@@ -387,7 +411,8 @@ class DataFormatReader:
                 field_name = statement.split(model_name)[1].split('=')[0].strip()
                 # setting field_name to set_value in model_name
                 plan_registered[model_name].change_field(field_name, set_value)
-            else:
+
+            elif not str.isspace(statement):
                 raise BadAlignmentCommand(statement, ". Interrupting interpretation")
 
             current_row = current_row + 1
