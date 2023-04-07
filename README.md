@@ -1,9 +1,11 @@
 # RiverFlow
- RiverFlow
+
+Monitoraggio eco-aware plant-based green-compatible bio-diverse di risorse idriche naturali
+
+
 # Prerequisiti
-numpy version >= 1.20
 
-tensorflow
-
-matplotlib.pyplot
+ - Numpy package for Python, version >= 1.21
+ - Tensorflow package for Python
+ - Matplotlib.Pyplot package for Python
 
