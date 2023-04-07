@@ -73,15 +73,14 @@ class DataFormatReader:
         # to find where the declaration section ends
 
         if '.decl\n' in self.rows:
-            decl_section = self.rows[1:self.rows.index('.res\n')]
-            if len([el for el in decl_section if el != '\n']) % 2:
+            decl_section = [r for r in self.rows[1:self.rows.index('.res\n')] if r != '\n']
+            if len(decl_section) % 2 != 0:
                 raise BadFormatStyle(self.format_path, "Bad pairing of declarations: " +
                                      "mismatched pair in declaration section ")
 
             # file<id> <Path> and arg_list {ID1}...{ID2} are paired, take even
             # and odd element of declaration section
             for file_token, arg_list in zip(decl_section[::2], decl_section[1::2]):
-
                 source_line = str(self.rows.index(file_token))
                 arg_list = arg_list.strip('\n')
 
@@ -90,14 +89,14 @@ class DataFormatReader:
                     raise BadFormatStyle(self.format_path, "Missing source_file token at line " +
                                          source_line)
 
-                if file_token.count('<') + file_token.count('>') != 2:
-                    raise MismatchedToken(self.format_path, "Incoherent use of delimiter tokens <> "
-                                                            "or use of illegal character '>', '<' ")
+                if file_token.count('\"') != 2:
+                    raise MismatchedToken(self.format_path, "Incoherent use of token '=' "
+                                                            "or use of illegal character \"")
 
-                file_path = file_token.split('<')[1].split('>')[0].strip(' ')
-                file_label = file_token.split('source_file', 1)[1].split(':')[0].strip(' ')
+                file_path = file_token.split('\"')[1].strip()
+                file_label = file_token.split('source_file', 1)[1].split('=')[0].strip(' ')
                 if not file_label or file_label == '':
-                    raise BadFormatStyle(self.format_path, f"File label required for FILE {file_path}"
+                    raise BadFormatStyle(self.format_path, f"File label required for source_file {file_path}"
                                                            " at line " + source_line)
 
                 # Add filepath file dictionary

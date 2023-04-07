@@ -89,7 +89,7 @@ class VariableVectorManager:
              "dev_stand": vec_std,
              "azzera_outlier": vec_zero_outliers,
              "interpola_outlier": vec_inter_outlier,
-             "interval": vec_interval,
+             "intervallo": vec_interval,
              "lunghezza": np.size,
              "tronca": vec_truncate,
              "gaussiana": "gaussiana",  # Label

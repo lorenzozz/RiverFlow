@@ -44,7 +44,7 @@ def vec_zero_mean(x):
     Subtracts the mean of vector x to x itself, making it a
     zero-mean vector.
     :param x: variable
-    :return: variable with zero mean
+    :return: x with zero mean
     """
     return x - np.mean(x)
 

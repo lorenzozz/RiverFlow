@@ -356,11 +356,14 @@ class DatasetPlanner:
         and storing it according to instructions given.
         The actual numeric work is done by the aligner children, while the planner
         just takes care of the house-keeping functions (storing, compressing...)
+        :param save_file the label of a model file defined in precedence.
         :return: A dataset in the requested location.
+
+        Example
+        >>
         """
 
-        m_lb = max(self.aligner.lower_bound)
-        m_ub = min(self.aligner.upper_bound)
+        m_lb, m_ub = max(self.aligner.lower_bound), min(self.aligner.upper_bound)
 
         # The number of data points generated are given by m_ub - m_lb. For more information
         # see the documentation is the Aligner object
@@ -383,7 +386,7 @@ class DatasetPlanner:
                       f" pair inside \"{save_file}\"")
 
         try:
-            numpy.savez(save_file, names)
+            numpy.savez(save_file, **names)
         except FileNotFoundError or FileExistsError:
             raise DatasetFileError(self.model_name)
 
