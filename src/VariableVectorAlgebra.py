@@ -104,7 +104,8 @@ class VariableVectorManager:
     def take_type(var_type):
         return {"categorical": str,
                 "boolean": str,
-                "numeric": numpy.float64}[var_type]
+                "numeric": numpy.float64,
+                "integer": numpy.int32}[var_type]
 
     def add_package(self, package, pack):
         # Add passed package to grammar

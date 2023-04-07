@@ -29,3 +29,20 @@ class VariableSliceRedefinition(Exception):
 
     def __str__(self):
         return "Multiple slice values for the same variable: " + self.var_id
+
+
+class DatasetInternalError(Exception):
+    def __init__(self, var_id):
+        self.var_id = var_id
+
+    def __str__(self):
+        return "Fatal internal error occurred during compilation of model" + self.var_id
+
+
+class DatasetFileError(Exception):
+    def __init__(self, var_id):
+        self.var_id = var_id
+
+    def __str__(self):
+        return "File error occured during creating of model" + self.var_id + \
+            ". Check if the file is avaiable and the path is correct"

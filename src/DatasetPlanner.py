@@ -1,3 +1,5 @@
+import numpy
+
 from DatasetErrors import *
 from LogManager import *
 from VariableVectorAlgebra import VariableVectorManager
@@ -20,6 +22,9 @@ class Aligner:
 
         self.target_var = None
         # Initialize the aligning underlying structure
+        # Necessary to map virtual indexes to logical indexes
+        self.initial_align = {}
+
         self.create_alignment()
 
         # Describes whether a variable must generate n-dimensional views over its values or
@@ -85,6 +90,70 @@ class Aligner:
     def add_target(self, target_var):
         self.target_var = target_var
 
+    def get_convolution(self, var_name):
+        """
+        Returns an array containing all views over the data vector as requested from
+        the description in the model. The return values are actually a view over the
+        initial data vector and thus are read only.
+
+        The routine computes the minimum upper bound and maximum lower bound
+        from the window sizes kept in self.windows.
+        It then computes the logical index of the usable slice of the aligned
+        complete data plan by subtracting the initial align of the data.
+        example:
+                x
+        0   1   2   3   4   5   6   7   8               D1
+                2   3   4   5   6                       D2
+                2   3   4   5   6   7   8               D3
+        If a window size of 1 before a 2 forward is specified for D1, no
+        change has to occur the alignment of other elements, as D1 has enough
+        data points in the alignment to provide such a window.
+            |---x---|---|
+        0   1  ^2  ^3  ^4  ^5  ^6   7   8               D1
+                2   3   4   5   6                       D2
+                2   3   4   5   6   7   8               D3
+        Max_upper = 6
+        Min_lower = 2
+
+        But  if D2 request a forward window of 2, the minimum upper window
+        has to go down by 2 for each sample to have the same amount of data points.
+            |---x---|---|
+        0   1  ^2  ^3  ^4  ^5  ^6   7   8               D1
+               ^2  ^3  ^4   5   6                       D2
+                |---|---|
+                2   3   4   5   6   7   8               D3
+        Max_upper = 4
+        Min_lower = 2
+
+        This same process is applied for every request. The final maximum lower bound
+        and minimum upper bound are the one used as specified above.
+
+        The actual convolution is the computed over by np.lib.stride_tricks
+        using the window size specified by the user file, as such
+        window_size = 1+lower_window+upper_window
+
+        :param var_name: the data vector
+        :return: views over the array as indicated
+        """
+        max_lb = max(self.lower_bound)
+        min_ub = min(self.upper_bound)
+
+        l_bot = self.get_logical(max_lb - self.bot_slide(var_name), var_name)
+
+        # Add 1 to account for python indexing
+        l_top = 1 + self.get_logical(min_ub + self.top_slide(var_name), var_name)
+
+        # The +1 accounts for the fact that the current element is included in the window
+        # Thus the window has size (prev_request, 1+after_request)
+        slider = self.top_slide(var_name) + self.bot_slide(var_name) + 1
+
+        # Trim data up to usable window in order to slide window over it and collect n samples
+        trimmed_data = self.var_vec.get_variable(var_name)[l_bot:l_top]
+
+        conv_data = np.lib.stride_tricks.sliding_window_view(trimmed_data, slider)
+
+        return conv_data
+
     def singleton(self, var_name):
         if var_name in self.window_generation_type.keys():
             raise VariableSliceRedefinition(var_name)
@@ -98,13 +167,20 @@ class Aligner:
     def upper_bound(self):
         return [self.windows[var][1] for var in self.variables]
 
-    @property
-    def bot_wins(self):
-        return [self.window_generation_type[var][0] for var in self.variables]
+    def bot_slide(self, name):
+        if isinstance(name, list):
+            return [self.window_generation_type[var][0] for var in name]
+        else:
+            return self.window_generation_type[name][0]
 
-    @property
-    def top_wins(self):
-        return [self.window_generation_type[var][1] for var in self.variables]
+    def top_slide(self, name):
+        if isinstance(name, list):
+            return [self.window_generation_type[var][1] for var in name]
+        else:
+            return self.window_generation_type[name][1]
+
+    def get_logical(self, index, name):
+        return index - self.initial_align[name]
 
     def create_alignment(self):
 
@@ -123,9 +199,7 @@ class Aligner:
         # Alignment described:
         # 0   1   2   3   4                 window: (0, 4) bottom_align = 0
         #         2   3   4   5   6         window: (2, 6) bottom_align = 2
-        print(intersection)
         bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in var_data]
-        print("Bottom:", bottom_aligns)
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
 
@@ -139,9 +213,7 @@ class Aligner:
         # 0   1   2   3   4                 window: (0, 4) top_align = 4
         #         2   3   4   5   6         window: (2, 6) bottom_align = 6
 
-        print(var_data)
         sizes = [np.size(data) for data in var_data]
-        print("sizes:",sizes)
         up_locs = [size + bottom - 1 for size, bottom in zip(sizes, bottom_aligns)]
         min_up = min(up_locs)
 
@@ -161,18 +233,18 @@ class Aligner:
         # Bottom_budget[i] = INIT_ALIGN - bottom[i]
         # Top_budget[i] = top[i] - INIT_ALIGN_TOP
 
-        print("Align: on", self.init_align)
+        # Align on: self.init_align
         self.windows = {var: [b, u] for b, u, var in zip(bottom_aligns, up_locs, self.variables)}
         self.budgets = {var: [b, u] for b, u, var in zip([self.init_align - bot for bot in bottom_aligns],
                                                          [top - min_up for top in up_locs], self.variables)}
-        print("Initial windows:", self.windows)
-        print("Budgets:", self.budgets)
+        self.initial_align = {var: bottom[0] for var, bottom in zip(self.windows.keys(), self.windows.values())}
+
 
 class DatasetPlanner:
     def __init__(self, raw_code, vector_var, name):
         self.raw = raw_code
-        self.specs = {"x name": None,
-                      "y name": None,
+        self.specs = {"x name": "x",
+                      "y name": "y",
                       "compression": False,
                       "error": None}
         self.logs = LogManager()
@@ -271,77 +343,49 @@ class DatasetPlanner:
     def change_field(self, field_name, new_val):
 
         if field_name in self.specs:
+            self.logs.log(f"> Changing field {field_name} to {new_val}")
             self.specs[field_name] = new_val
         else:
             # Error mode does not apply for semantic errors.
             raise IncorrectFieldName(field_name)
 
-    def compile(self):
+    def compile(self, save_file):
 
-        # After all declaration are complete, the first common usable
-        # value might have changed as a result of the introduction of windows
-        # into the requested data
-        max_lower_bound = max(self.aligner.lower_bound)
-        min_upper_bound = min(self.aligner.upper_bound)
-
-        n_data_points = min_upper_bound-max_lower_bound + 1
-        self.logs.log(f"> Generated {n_data_points} datapoints from input configuration")
-        print("datapoints:",n_data_points)
         """
-        
-        
+        Compiles a plan into a dataset, applying the specified transformations to it
+        and storing it according to instructions given.
+        The actual numeric work is done by the aligner children, while the planner
+        just takes care of the house-keeping functions (storing, compressing...)
+        :return: A dataset in the requested location.
         """
-        logical_bots = [max_lower_bound - bot_wind for bot_wind in self.aligner.bot_wins]
 
-        # The +1 accounts for numpy python-like indexing
-        logical_tops = [min_upper_bound + up_wind for up_wind in self.aligner.top_wins]
+        m_lb = max(self.aligner.lower_bound)
+        m_ub = min(self.aligner.upper_bound)
 
-        # The +1 accounts for the fact that the current element is included in the window
-        # Thus the window has size (prev_request, 1+after_request)
-        print(self.aligner.top_wins, self.aligner.bot_wins)
-        strides = {v: b + u + 1 for b, u, v in
-                   zip(self.aligner.top_wins, self.aligner.bot_wins, self.aligner.variables)}
+        # The number of data points generated are given by m_ub - m_lb. For more information
+        # see the documentation is the Aligner object
+        n_data_points = m_ub - m_lb + 1
+        self.logs.log(f"> Generated {n_data_points} data points from input configuration")
 
-        print("Max and lower bound:", max_lower_bound, min_upper_bound)
+        no_target_v = [v for v in self.aligner.variables if v != self.aligner.target_var]
+        self.logs.log(f"> Non target variables:" + str(no_target_v) +
+                      f", Target variables: {self.aligner.target_var}")
+        try:
+            x_data = np.hstack([self.aligner.get_convolution(var) for var in no_target_v])
+            y_data = self.aligner.get_convolution(self.aligner.target_var)
+        except ValueError:
+            raise DatasetInternalError(self.model_name)
 
-        non_target_variables = [var for var in self.aligner.variables if var != self.aligner.target_var]
+        # np.save_z() takes the set name as a key in its call, make a dictionary and
+        # use double star operator **dic to assign user-indicated names
+        names = {self.specs["x name"]: x_data, self.specs["y name"]: y_data}
+        self.logs.log(f"> Saved model as a {self.specs['x name']}/{self.specs['y name']}"
+                      f" pair inside \"{save_file}\"")
 
-        # Trim data up to usable window in order to slide window over it and collect n samples
-        trimmed_data = [self.vec_vars.get_variable(var)[b:t] for var, b, t in zip(non_target_variables,
-                                                                                  logical_bots,
-                                                                                  logical_tops)]
-        print("Trimmed lens:", [np.size(data) for data in trimmed_data])
-        strider = np.lib.stride_tricks.sliding_window_view
-        print("Alignment windows:", self.aligner.windows)
-        print("Sliding windows( numeric)", self.aligner.window_generation_type)
-        print("Strides:", strides)
-        print("Logical Bottoms:", logical_bots)
-        print("Logical tops:", logical_tops)
-
-        print(non_target_variables, [strides[var] for var in non_target_variables])
-        data_windows = [strider(data, strides[var]) for data, var in zip(trimmed_data, non_target_variables)]
-
-        print([len(data_w) for data_w in data_windows])
-        dataset_rows = np.hstack(data_windows)
-        print(data_windows)
-
-        # non_target_strides = [strider(var_data, )]
-        # print(non_target_variables)
-        # print(self.aligner.target_var)
-        # print(logical_xs)
-        # print(logical_ys)
-
-        # print(window_strides)
-
-        strider = np.lib.stride_tricks.sliding_window_view
-        x = np.arange(6)
-        a = strider(x, 3, writeable=False)
-        # print(a)
-        # print(x, x[1:3])
-        b = [1, 2, 3, 4, 5]
-        y = strider(b, 2)
-        # print(y)
-        # print(np.hstack((a, y)))
+        try:
+            numpy.savez(save_file, names)
+        except FileNotFoundError or FileExistsError:
+            raise DatasetFileError(self.model_name)
 
     def log(self, log_file_path):
         self.logs.write_logs(log_file_path)

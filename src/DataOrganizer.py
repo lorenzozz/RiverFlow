@@ -28,12 +28,6 @@ class DataOrganizer:
     def print_extracted_data(self):
         print(self.extracted_data)
 
-    def get_data_numeric(self, element):
-        element = self.extracted_data[3]
-        print(element)
-
-        return element
-
 
 class DataFormatReader:
     def __init__(self, format_path):
@@ -165,7 +159,7 @@ class DataFormatReader:
             raise MissingSection(self.format_path, "Act segment not present" +
                                  "in format file ( missing newline \\n? ) ")
 
-        recognized_data_types = ['categorical', 'numeric', 'boolean']
+        recognized_data_types = ['categorical', 'numeric', 'boolean', 'integer']
         resolve_section = self.rows[decl_section_marker:act_section_marker]
 
         copy_action: list[tuple] = []
@@ -346,6 +340,8 @@ class DataFormatReader:
         current_row = plan_sec
 
         plan_registered = {}
+        plan_save_files = {}
+        log_save_files = {}
 
         while current_row < len(self.rows):
             statement = self.rows[current_row]
@@ -362,24 +358,37 @@ class DataFormatReader:
                 plan_registered[plan_name] = DatasetPlanner(self.rows[current_row:], self.var_vector, plan_name)
                 plan_registered[plan_name].parse()
                 current_row = next(i for i in range(current_row, len(self.rows)) if 'end plan' in self.rows[i])
+            # House-keeping file management commands
+            if '_file ' in statement:
 
+                file_path = statement.split('\"')[1].strip()
+                if 'plan' in statement:
+                    file_label = statement.split('plan_file ')[1].split('=')[0].strip()
+                    plan_save_files[file_label] = file_path
+                elif 'log' in statement:
+                    log_label = statement.split('log_file ')[1].split('=')[0].strip()
+                    log_save_files[log_label] = file_path
+
+            # Out of compilation commands
             elif 'compile' in statement:
 
                 plan_label = statement.split('compile')[1].split('into')[0].strip()
                 plan_file_label = statement.split('into')[1].strip()
-
-                plan_registered[plan_label].compile()
+                plan_registered[plan_label].compile(plan_save_files[plan_file_label])
 
             elif 'log ' in statement:
                 plan_label = statement.split('log')[1].split('into')[0].strip()
                 log_file = statement.split('into')[1].strip()
-
-                plan_registered[plan_label].log(log_file)
+                plan_registered[plan_label].log(log_save_files[log_file])
 
             elif 'set' in statement:
-                NotImplemented
+                set_value = statement.split('\"')[1].strip()
+                model_name = next(i for i in statement.split(' ') if i in plan_registered.keys())
+                field_name = statement.split(model_name)[1].split('=')[0].strip()
+                # setting field_name to set_value in model_name
+                plan_registered[model_name].change_field(field_name, set_value)
             else:
-                NotImplemented
+                raise BadAlignmentCommand(statement, ". Interrupting interpretation")
 
             current_row = current_row + 1
 

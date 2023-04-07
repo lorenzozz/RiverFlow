@@ -1,3 +1,5 @@
+import gzip
+
 import numpy
 import csv
 import time
