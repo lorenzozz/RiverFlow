@@ -98,6 +98,14 @@ class Aligner:
     def upper_bound(self):
         return [self.windows[var][1] for var in self.variables]
 
+    @property
+    def bot_wins(self):
+        return [self.window_generation_type[var][0] for var in self.variables]
+
+    @property
+    def top_wins(self):
+        return [self.window_generation_type[var][1] for var in self.variables]
+
     def create_alignment(self):
 
         # Find first element present in all aligning elements.
@@ -115,8 +123,9 @@ class Aligner:
         # Alignment described:
         # 0   1   2   3   4                 window: (0, 4) bottom_align = 0
         #         2   3   4   5   6         window: (2, 6) bottom_align = 2
-
+        print(intersection)
         bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in var_data]
+        print("Bottom:", bottom_aligns)
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
 
@@ -130,8 +139,10 @@ class Aligner:
         # 0   1   2   3   4                 window: (0, 4) top_align = 4
         #         2   3   4   5   6         window: (2, 6) bottom_align = 6
 
+        print(var_data)
         sizes = [np.size(data) for data in var_data]
-        up_locs = [size + bottom for size, bottom in zip(sizes, bottom_aligns)]
+        print("sizes:",sizes)
+        up_locs = [size + bottom - 1 for size, bottom in zip(sizes, bottom_aligns)]
         min_up = min(up_locs)
 
         # Create windows and budgets for each data source to use in
@@ -150,10 +161,12 @@ class Aligner:
         # Bottom_budget[i] = INIT_ALIGN - bottom[i]
         # Top_budget[i] = top[i] - INIT_ALIGN_TOP
 
+        print("Align: on", self.init_align)
         self.windows = {var: [b, u] for b, u, var in zip(bottom_aligns, up_locs, self.variables)}
         self.budgets = {var: [b, u] for b, u, var in zip([self.init_align - bot for bot in bottom_aligns],
                                                          [top - min_up for top in up_locs], self.variables)}
-
+        print("Initial windows:", self.windows)
+        print("Budgets:", self.budgets)
 
 class DatasetPlanner:
     def __init__(self, raw_code, vector_var, name):
@@ -265,16 +278,70 @@ class DatasetPlanner:
 
     def compile(self):
 
-        print("Windows:", self.aligner.windows)
-        print("Budgets:", self.aligner.budgets)
-        print("Slide:", self.aligner.window_generation_type)
-
+        # After all declaration are complete, the first common usable
+        # value might have changed as a result of the introduction of windows
+        # into the requested data
         max_lower_bound = max(self.aligner.lower_bound)
-        min_lower_bound = min(self.aligner.upper_bound)
+        min_upper_bound = min(self.aligner.upper_bound)
 
-        print(max_lower_bound, min_lower_bound)
+        n_data_points = min_upper_bound-max_lower_bound + 1
+        self.logs.log(f"> Generated {n_data_points} datapoints from input configuration")
+        print("datapoints:",n_data_points)
+        """
+        
+        
+        """
+        logical_bots = [max_lower_bound - bot_wind for bot_wind in self.aligner.bot_wins]
 
+        # The +1 accounts for numpy python-like indexing
+        logical_tops = [min_upper_bound + up_wind for up_wind in self.aligner.top_wins]
 
+        # The +1 accounts for the fact that the current element is included in the window
+        # Thus the window has size (prev_request, 1+after_request)
+        print(self.aligner.top_wins, self.aligner.bot_wins)
+        strides = {v: b + u + 1 for b, u, v in
+                   zip(self.aligner.top_wins, self.aligner.bot_wins, self.aligner.variables)}
+
+        print("Max and lower bound:", max_lower_bound, min_upper_bound)
+
+        non_target_variables = [var for var in self.aligner.variables if var != self.aligner.target_var]
+
+        # Trim data up to usable window in order to slide window over it and collect n samples
+        trimmed_data = [self.vec_vars.get_variable(var)[b:t] for var, b, t in zip(non_target_variables,
+                                                                                  logical_bots,
+                                                                                  logical_tops)]
+        print("Trimmed lens:", [np.size(data) for data in trimmed_data])
+        strider = np.lib.stride_tricks.sliding_window_view
+        print("Alignment windows:", self.aligner.windows)
+        print("Sliding windows( numeric)", self.aligner.window_generation_type)
+        print("Strides:", strides)
+        print("Logical Bottoms:", logical_bots)
+        print("Logical tops:", logical_tops)
+
+        print(non_target_variables, [strides[var] for var in non_target_variables])
+        data_windows = [strider(data, strides[var]) for data, var in zip(trimmed_data, non_target_variables)]
+
+        print([len(data_w) for data_w in data_windows])
+        dataset_rows = np.hstack(data_windows)
+        print(data_windows)
+
+        # non_target_strides = [strider(var_data, )]
+        # print(non_target_variables)
+        # print(self.aligner.target_var)
+        # print(logical_xs)
+        # print(logical_ys)
+
+        # print(window_strides)
+
+        strider = np.lib.stride_tricks.sliding_window_view
+        x = np.arange(6)
+        a = strider(x, 3, writeable=False)
+        # print(a)
+        # print(x, x[1:3])
+        b = [1, 2, 3, 4, 5]
+        y = strider(b, 2)
+        # print(y)
+        # print(np.hstack((a, y)))
 
     def log(self, log_file_path):
         self.logs.write_logs(log_file_path)
