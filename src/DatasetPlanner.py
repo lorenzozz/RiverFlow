@@ -45,6 +45,7 @@ class Aligner:
 
         if var_name in self.window_generation_type.keys():
             raise VariableSliceRedefinition(var_name)
+        self.window_generation_type[var_name] = request
 
         # Window keeping algorithm:
         # When a variable requests to keep a window to slide over the
@@ -82,17 +83,14 @@ class Aligner:
         print(self.budgets)
 
     def add_target(self, target_var):
-        self.window_generation_type[target_var] = "Target"
         self.target_var = target_var
 
     def singleton(self, var_name):
         if var_name in self.window_generation_type.keys():
             raise VariableSliceRedefinition(var_name)
-        self.window_generation_type[var_name] = "Singleton"
+        self.window_generation_type[var_name] = [0, 0]
 
     def create_alignment(self):
-        print(self.alignment)
-        print(self.variables)
 
         # Find first element present in all aligning elements.
         var_data = [self.var_vec.get_variable(var) for var in self.alignment]
@@ -245,7 +243,8 @@ class DatasetPlanner:
             raise IncorrectFieldName(field_name)
 
     def compile(self):
-        NotImplemented
+
+        
 
     def log(self, log_file_path):
         self.logs.write_logs(log_file_path)
