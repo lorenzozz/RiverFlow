@@ -365,8 +365,10 @@ class DataFormatReader:
 
             elif 'compile' in statement:
 
-                plan_label = statement.split('compile')[1].split('into')[0]
+                plan_label = statement.split('compile')[1].split('into')[0].strip()
                 plan_file_label = statement.split('into')[1].strip()
+
+                plan_registered[plan_label].compile()
 
             elif 'log ' in statement:
                 plan_label = statement.split('log')[1].split('into')[0].strip()

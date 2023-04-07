@@ -90,6 +90,14 @@ class Aligner:
             raise VariableSliceRedefinition(var_name)
         self.window_generation_type[var_name] = [0, 0]
 
+    @property
+    def lower_bound(self):
+        return [self.windows[var][0] for var in self.variables]
+
+    @property
+    def upper_bound(self):
+        return [self.windows[var][1] for var in self.variables]
+
     def create_alignment(self):
 
         # Find first element present in all aligning elements.
@@ -160,6 +168,25 @@ class DatasetPlanner:
 
         self.aligner = None
 
+    def parse_window_request_statement(self, statement):
+        request = [0, 0]
+        var_name = statement.split('from')[1].strip()
+
+        # Composite statement of the type
+        # "take <> before x and take <> after x
+        if 'and' in statement:
+            request[0] = int(statement.split('take')[1].split('before')[0].strip())
+            request[1] = int(statement.split('and')[1].split('after')[0].strip())
+        elif 'before' in statement:
+            request[0] = int(statement.split('take')[1].split('before')[0].strip())
+        elif 'after' in statement:
+            request[1] = int(statement.split('take')[1].split('after')[0].strip())
+        else:
+            self.aligner.singleton(var_name)
+            return
+
+        self.aligner.wants(var_name, request)
+
     def parse(self):
 
         end_of_decl = self.raw.index('end plan\n')
@@ -208,6 +235,10 @@ class DatasetPlanner:
             elif 'make' in statement:
                 target_variable = statement.split('make')[1].split('the')[0].strip()
 
+                # Immediate vectorial model output request recognized
+                if 'take' in statement:
+                    self.parse_window_request_statement(statement.split('and')[1].strip())
+
             elif 'pair' in statement:
                 if not self.aligner:
                     raise BadAlignmentCommand(statement, "Plan and x declaration must precede the binding of x and "
@@ -222,17 +253,7 @@ class DatasetPlanner:
                 if 'take' not in statement:
                     raise BadAlignmentCommand(statement, f"Incorrect planning statement: \"{statement}\"")
 
-                request = [0, 0]
-                var_name = statement.split('from')[1].strip()
-                if 'before' in statement:
-                    request[0] = int(statement.split('take')[1].split('before')[0].strip())
-                if 'after' in statement:
-                    request[1] = int(statement.split('and')[1].split('after')[0].strip())
-                else:
-                    self.aligner.singleton(var_name)
-                    continue
-
-                self.aligner.wants(var_name, request)
+                self.parse_window_request_statement(statement)
 
     def change_field(self, field_name, new_val):
 
@@ -244,7 +265,16 @@ class DatasetPlanner:
 
     def compile(self):
 
-        
+        print("Windows:", self.aligner.windows)
+        print("Budgets:", self.aligner.budgets)
+        print("Slide:", self.aligner.window_generation_type)
+
+        max_lower_bound = max(self.aligner.lower_bound)
+        min_lower_bound = min(self.aligner.upper_bound)
+
+        print(max_lower_bound, min_lower_bound)
+
+
 
     def log(self, log_file_path):
         self.logs.write_logs(log_file_path)
