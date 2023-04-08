@@ -50,9 +50,8 @@ class VariableVectorManager:
             if 'print(' in statement:
                 print(eval(statement.split('print(')[1].split(')')[0].strip(), self.grammar))
             else:
-                ref_var = statement.split('=')[0].strip()
-                action = statement.split('=')[1].strip()
-
+                ref_var = statement.split('=', 1)[0].strip()
+                action = statement.split('=', 1)[1].strip()
                 self.variables[ref_var] = eval(action, self.grammar)
                 self.variables_dims[ref_var] = np.size(self.variables[ref_var])
                 self.grammar[ref_var] = self.variables[ref_var]
@@ -94,6 +93,7 @@ class VariableVectorManager:
              "intervallo": vec_interval,
              "lunghezza": np.size,
              "tronca": vec_truncate,
+             "one_hot": vec_one_hot,
              "gaussiana": "gaussiana",  # Label
              "esponenziale": "esponenziale",  # Label
              "uniforme": "uniforme",  # Label

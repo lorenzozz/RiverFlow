@@ -129,6 +129,11 @@ def vec_discrete(x, bins, val_map):
     return result
 
 
+def vec_one_hot(x):
+    a = set(x)
+    r = np.stack(axis=-1)
+    NotImplemented
+
 def vec_interval(a, b, n):
     """
     Returns n evenly spaced sample from linear interval[a,b]
