@@ -86,6 +86,7 @@ class VariableVectorManager:
              "da_categorico_a_numero": vec_bool_to_num,
              "media_zero": vec_zero_mean,
              "media": vec_mean,
+             "zero_con_probabilita": vec_zero_with_prob,
              "dev_stand": vec_std,
              "azzera_outlier": vec_zero_outliers,
              "interpola_outlier": vec_inter_outlier,

@@ -62,6 +62,7 @@ class DataFormatReader:
         """ Read data from format path and store lines into self.Rows
         :return: None """
         self.rows = self.data.readlines()
+        self.rows = [r for r in self.rows if not str.isspace(r)]
 
     def parse_part_one(self):
         """ Parse first part of format description file into a list of input files along
@@ -152,15 +153,15 @@ class DataFormatReader:
 
     def parse_part_two(self):
 
-        decl_section_marker = self.rows.index('.res\n') + 1
-        act_section_marker = self.rows[decl_section_marker:].index('\n') + decl_section_marker
+        res_section_marker = self.rows.index('.res\n') + 1
+        act_section_marker = self.rows.index('.act\n')
 
         if not act_section_marker:
             raise MissingSection(self.format_path, "Act segment not present" +
                                  "in format file ( missing newline \\n? ) ")
 
         recognized_data_types = ['categorical', 'numeric', 'boolean', 'integer']
-        resolve_section = self.rows[decl_section_marker:act_section_marker]
+        resolve_section = self.rows[res_section_marker:act_section_marker]
 
         copy_action: list[tuple] = []
 
@@ -199,8 +200,8 @@ class DataFormatReader:
                     copy_action.append((new_var, reference))
             else:
                 print(declaration)
-                raise BadFormatStyle(self.format_path, f"Unrecognized token at line"
-                                     + str(decl_section_marker))
+                raise BadFormatStyle(self.format_path, f"Unrecognized token at line "
+                                     + source_line)
 
         # Resolve section is also in charge of generating the vectors associated
         # with each variable as it must remember assignments and do deep-copy of
@@ -213,12 +214,10 @@ class DataFormatReader:
 
     def act(self, no_except=False):
 
-        decl_sec = self.rows.index('\n') + 1
-        act_sec = self.rows[decl_sec:].index('\n') + decl_sec
+        act_sec = self.rows.index('.act\n')
         sap_sec = self.rows.index('.sap\n')
 
-        act_section = self.rows[act_sec + 1:sap_sec]
-        act_section.remove('\n')
+        act_section = self.rows[act_sec:sap_sec]
 
         if '.act' not in act_section[0]:
             raise MissingSection(self.format_path, " Incorrect separation of acting" +

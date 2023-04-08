@@ -18,11 +18,12 @@ def vec_inter_outlier(x, m):
     :param m: algorithm parameter
     :return: vector with outliers brought to the mean
     """
-    d = np.abs(x - np.median(x))
+    a = x
+    d = np.abs(a - np.median(a))
     m_dev = np.median(d)
     s = d / m_dev if m_dev else np.zero(len(d))
-    x[s > m] = m*m_dev
-    return x
+    a[s > m] = m*m_dev
+    return a
 
 
 def vec_zero_outliers(x, n):
@@ -93,11 +94,12 @@ def vec_zero_with_prob(x, probability):
     :param probability: probability that a random element x[i] is zeroed
     :return: the result vector
     """
+    a = x
     indices = np.random.choice(np.arange(np.size(x)), replace=False,
                                size=int(np.size(x) * probability))
-    x[indices] = 0
+    a[indices] = 0
 
-    return x
+    return a
 
 
 def vec_discrete(x, bins, val_map):
