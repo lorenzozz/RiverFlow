@@ -416,20 +416,28 @@ E' possibile anche accedere ai log generati dal modello durante la compilazione 
     log <NomePiano> into <NomeLogFile>
    Tra i log generati dal piano ci sono i nomi dei dataset nel salvataggio del modello, il numero di data point (in senso generale, l'unità vettoriale che bisogna dare alla rete per avere un output), i cambiamenti avvenuti ai parametri e le variabili coinvolte nel modello. In futuro verrà implementata una descrizione generata automaticamente del modello, incluse le finestre di scorrimento utilizzate.
    Infine è possibile compilare definitivamente, quindi generare le righe del dataset finale, con il comando
-   
+
 
     compile <PlanName> into <PlanFile>
+    
 Come nota tecnica, si fa notare che il salvataggio del modello avviene tramite np.savez. Si potrà accedere al dataset tramite la funzione np.load, o un oggetto DatasetLoader, utilizzando le targhette 'x name' e 'y name'. Si segnala inoltre che il valore predefinito di questi ultimi due campi, se non alterato, è rispettivamente 'x' e 'y'.
 
-Nella pratica, è utile separare i dati di training in due sezioni, la sezione di allenamento e la sezione di test. ~~La sezione .make del file di progetto implementa questa proposizione con la direttiva di `split`~~(Non ancora implementato).  
+Nella pratica, è utile separare i dati di training in due sezioni, la sezione di allenamento e la sezione di test. La sezione .make del file di progetto implementa questa proposizione con la direttiva di `split`.
 La direttiva di split ha questo formato
 
+
     split <ModelName> into <File1>, <File2> as <Percentuale>,<Percentuale2> 
-Le percentuali espresse devono obbligatoriamente sommarsi al 100%.
+Le percentuali espresse devono obbligatoriamente sommarsi al 100%, e le targhette <File1> ec.. fanno riferimento a label date a file precedentemente definite.
 Il seguente esempio divide il modello in due sezioni, la sezione di test e la sezione di traning, la prima contenente il 60% dei dati di training e la seconda il 40%.
 
     split Model into TestFile, TrainingFile as 40, 60
+Una precisazione è necessaria. Specificando nell'istruzione di compilazione un file in particolare, in questo modo
 
+    compile ModelName into PlanFile	
+__viene bypassato qualsiasi direttiva di split precedentemente definita, e il modello generato (input e output desiderato) vengono salvati nel file specificato.__
+E' quindi necessario omettere il file di salvataggio nella direttiva di compile per poter sfruttare la funzionalità di split, nel seguente modo.
+	
+    compile ModelName
 Presentiamo ora un un file di progetto tipico, che prenda da dei file sorgente rispettivamente le variabili {Stipendio}, {DateStipendi}, {Profitti} {DateProfitti} e genera un dataset.
 
     .decl
