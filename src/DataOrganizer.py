@@ -469,16 +469,12 @@ class DataFormatReader:
         :returns None
         """
         self.create_data()
-        # .decl
-        self.parse_part_one()
-        # .res
-        self.parse_part_two()
-        # .act
-        self.act()
-        # .sap
-        self.parse_sap()
-        # .make
-        self.parse_make()
+
+        self.parse_part_one()  # .decl
+        self.parse_part_two()   # .res
+        self.act()    # .act
+        self.parse_sap()   # .sap
+        self.parse_make()  # .make
 
 
 if __name__ == '__main__':
