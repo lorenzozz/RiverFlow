@@ -12,7 +12,7 @@
   <div class="stackedit__html"><h1 id="struttura-del-file-di-progetto">Struttura del file di progetto</h1>
 <p>I file di progetto permettono di manipolare velocemente e molto liberamente i campi dati importati per il loro uso nel modello. Il file di progetto si articola in cinque sezioni: .decl, .res, .act, .sap, .make, che stanno rispettivamente declarative, resolutive, active, save &amp; plan, make.<br>
 Ciascuna sezione possiede un numero limitato ma sufficiente di operazioni per manipolare i dati. In particolare, il file di progetto contiene sia sezioni interpretate dal codice in src (molto liberamente), sia sezioni interpretate dall’interprete di Python stesso.</p>
-<pre class=" language-mermaid"><svg id="mermaid-svg-XHXmV88oHBIzYzm8" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="159.43331909179688" style="max-width: 535.4083251953125px;" viewBox="0 0 535.4083251953125 159.43331909179688"><style>#mermaid-svg-XHXmV88oHBIzYzm8{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#000000;}#mermaid-svg-XHXmV88oHBIzYzm8 .error-icon{fill:#552222;}#mermaid-svg-XHXmV88oHBIzYzm8 .error-text{fill:#552222;stroke:#552222;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-thickness-normal{stroke-width:2px;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-svg-XHXmV88oHBIzYzm8 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-svg-XHXmV88oHBIzYzm8 .marker{fill:#666;stroke:#666;}#mermaid-svg-XHXmV88oHBIzYzm8 .marker.cross{stroke:#666;}#mermaid-svg-XHXmV88oHBIzYzm8 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-svg-XHXmV88oHBIzYzm8 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#000000;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster-label text{fill:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster-label span{color:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 .label text,#mermaid-svg-XHXmV88oHBIzYzm8 span{fill:#000000;color:#000000;}#mermaid-svg-XHXmV88oHBIzYzm8 .node rect,#mermaid-svg-XHXmV88oHBIzYzm8 .node circle,#mermaid-svg-XHXmV88oHBIzYzm8 .node ellipse,#mermaid-svg-XHXmV88oHBIzYzm8 .node polygon,#mermaid-svg-XHXmV88oHBIzYzm8 .node path{fill:#eee;stroke:#999;stroke-width:1px;}#mermaid-svg-XHXmV88oHBIzYzm8 .node .label{text-align:center;}#mermaid-svg-XHXmV88oHBIzYzm8 .node.clickable{cursor:pointer;}#mermaid-svg-XHXmV88oHBIzYzm8 .arrowheadPath{fill:#333333;}#mermaid-svg-XHXmV88oHBIzYzm8 .edgePath .path{stroke:#666;stroke-width:1.5px;}#mermaid-svg-XHXmV88oHBIzYzm8 .flowchart-link{stroke:#666;fill:none;}#mermaid-svg-XHXmV88oHBIzYzm8 .edgeLabel{background-color:white;text-align:center;}#mermaid-svg-XHXmV88oHBIzYzm8 .edgeLabel rect{opacity:0.5;background-color:white;fill:white;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster rect{fill:hsl(210,66.6666666667%,95%);stroke:#26a;stroke-width:1px;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster text{fill:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 .cluster span{color:#333;}#mermaid-svg-XHXmV88oHBIzYzm8 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(-160,0%,93.3333333333%);border:1px solid #26a;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-svg-XHXmV88oHBIzYzm8:root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#mermaid-svg-XHXmV88oHBIzYzm8 flowchart{fill:apa;}</style><g><g class="output"><g class="clusters"></g><g class="edgePaths"><g class="edgePath LS-A LE-B" style="opacity: 1;" id="L-A-B"><path class="path" d="M109.55000305175781,79.71665954589844L134.5500030517578,79.71665954589844L159.5500030517578,79.71665954589844" marker-end="url(https://stackedit.io/app#arrowhead245)" style="fill:none"></path><defs><marker id="arrowhead245" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-B LE-C" style="opacity: 1;" id="L-B-C"><path class="path" d="M251.28334045410156,79.71665954589844L276.28334045410156,79.71665954589844L301.7833412170409,80.21665954589844" marker-end="url(https://stackedit.io/app#arrowhead246)" style="fill:none"></path><defs><marker id="arrowhead246" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-C LE-D" style="opacity: 1;" id="L-C-D"><path class="path" d="M365.9057995404085,62.964127024539295L407.65833282470703,31.35832977294922L432.65833282470703,31.35832977294922" marker-end="url(https://stackedit.io/app#arrowhead247)" style="fill:none"></path><defs><marker id="arrowhead247" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-C LE-E" style="opacity: 1;" id="L-C-E"><path class="path" d="M365.905798661541,97.4691914202461L407.65833282470703,128.07498931884766L451.7583312988281,128.07498931884766" marker-end="url(https://stackedit.io/app#arrowhead248)" style="fill:none"></path><defs><marker id="arrowhead248" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g></g><g class="edgeLabels"><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-A-B" class="edgeLabel L-LS-A' L-LE-B"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-B-C" class="edgeLabel L-LS-B' L-LE-C"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-C-D" class="edgeLabel L-LS-C' L-LE-D"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-C-E" class="edgeLabel L-LS-C' L-LE-E"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" style="opacity: 1;" id="flowchart-A-1100" transform="translate(58.775001525878906,79.71665954589844)"><rect rx="0" ry="0" x="-50.775001525878906" y="-23.35832977294922" width="101.55000305175781" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-40.775001525878906,-13.358329772949219)"><foreignObject width="81.55000305175781" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">declaration</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-B-1101" transform="translate(205.4166717529297,79.71665954589844)"><rect rx="0" ry="0" x="-45.866668701171875" y="-23.35832977294922" width="91.73333740234375" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-35.866668701171875,-13.358329772949219)"><foreignObject width="71.73333740234375" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">resolution</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-C-1103" transform="translate(341.9708366394043,79.71665954589844)"><polygon points="40.687495422363284,0 81.37499084472657,-40.687495422363284 40.687495422363284,-81.37499084472657 0,-40.687495422363284" transform="translate(-40.687495422363284,40.687495422363284)" class="label-container"></polygon><g class="label" transform="translate(0,0)"><g transform="translate(-11.849998474121094,-13.358329772949219)"><foreignObject width="23.699996948242188" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Act</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-D-1105" transform="translate(480.03333282470703,31.35832977294922)"><rect rx="0" ry="0" x="-47.375" y="-23.35832977294922" width="94.75" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-37.375,-13.358329772949219)"><foreignObject width="74.75" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Save&amp;Plan</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-E-1107" transform="translate(480.03333282470703,128.07498931884766)"><rect rx="0" ry="0" x="-28.275001525878906" y="-23.35832977294922" width="56.55000305175781" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-18.275001525878906,-13.358329772949219)"><foreignObject width="36.55000305175781" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Make</div></foreignObject></g></g></g></g></g></g></svg></pre>
+<pre class=" language-mermaid"><svg id="mermaid-svg-oyL4NQa4nunMiDvv" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="159.43331909179688" style="max-width: 535.4083251953125px;" viewBox="0 0 535.4083251953125 159.43331909179688"><style>#mermaid-svg-oyL4NQa4nunMiDvv{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#000000;}#mermaid-svg-oyL4NQa4nunMiDvv .error-icon{fill:#552222;}#mermaid-svg-oyL4NQa4nunMiDvv .error-text{fill:#552222;stroke:#552222;}#mermaid-svg-oyL4NQa4nunMiDvv .edge-thickness-normal{stroke-width:2px;}#mermaid-svg-oyL4NQa4nunMiDvv .edge-thickness-thick{stroke-width:3.5px;}#mermaid-svg-oyL4NQa4nunMiDvv .edge-pattern-solid{stroke-dasharray:0;}#mermaid-svg-oyL4NQa4nunMiDvv .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-svg-oyL4NQa4nunMiDvv .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-svg-oyL4NQa4nunMiDvv .marker{fill:#666;stroke:#666;}#mermaid-svg-oyL4NQa4nunMiDvv .marker.cross{stroke:#666;}#mermaid-svg-oyL4NQa4nunMiDvv svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-svg-oyL4NQa4nunMiDvv .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#000000;}#mermaid-svg-oyL4NQa4nunMiDvv .cluster-label text{fill:#333;}#mermaid-svg-oyL4NQa4nunMiDvv .cluster-label span{color:#333;}#mermaid-svg-oyL4NQa4nunMiDvv .label text,#mermaid-svg-oyL4NQa4nunMiDvv span{fill:#000000;color:#000000;}#mermaid-svg-oyL4NQa4nunMiDvv .node rect,#mermaid-svg-oyL4NQa4nunMiDvv .node circle,#mermaid-svg-oyL4NQa4nunMiDvv .node ellipse,#mermaid-svg-oyL4NQa4nunMiDvv .node polygon,#mermaid-svg-oyL4NQa4nunMiDvv .node path{fill:#eee;stroke:#999;stroke-width:1px;}#mermaid-svg-oyL4NQa4nunMiDvv .node .label{text-align:center;}#mermaid-svg-oyL4NQa4nunMiDvv .node.clickable{cursor:pointer;}#mermaid-svg-oyL4NQa4nunMiDvv .arrowheadPath{fill:#333333;}#mermaid-svg-oyL4NQa4nunMiDvv .edgePath .path{stroke:#666;stroke-width:1.5px;}#mermaid-svg-oyL4NQa4nunMiDvv .flowchart-link{stroke:#666;fill:none;}#mermaid-svg-oyL4NQa4nunMiDvv .edgeLabel{background-color:white;text-align:center;}#mermaid-svg-oyL4NQa4nunMiDvv .edgeLabel rect{opacity:0.5;background-color:white;fill:white;}#mermaid-svg-oyL4NQa4nunMiDvv .cluster rect{fill:hsl(210,66.6666666667%,95%);stroke:#26a;stroke-width:1px;}#mermaid-svg-oyL4NQa4nunMiDvv .cluster text{fill:#333;}#mermaid-svg-oyL4NQa4nunMiDvv .cluster span{color:#333;}#mermaid-svg-oyL4NQa4nunMiDvv div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(-160,0%,93.3333333333%);border:1px solid #26a;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-svg-oyL4NQa4nunMiDvv:root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#mermaid-svg-oyL4NQa4nunMiDvv flowchart{fill:apa;}</style><g><g class="output"><g class="clusters"></g><g class="edgePaths"><g class="edgePath LS-A LE-B" style="opacity: 1;" id="L-A-B"><path class="path" d="M109.55000305175781,79.71665954589844L134.5500030517578,79.71665954589844L159.5500030517578,79.71665954589844" marker-end="url(https://stackedit.io/app#arrowhead261)" style="fill:none"></path><defs><marker id="arrowhead261" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-B LE-C" style="opacity: 1;" id="L-B-C"><path class="path" d="M251.28334045410156,79.71665954589844L276.28334045410156,79.71665954589844L301.7833412170409,80.21665954589844" marker-end="url(https://stackedit.io/app#arrowhead262)" style="fill:none"></path><defs><marker id="arrowhead262" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-C LE-D" style="opacity: 1;" id="L-C-D"><path class="path" d="M365.9057995404085,62.964127024539295L407.65833282470703,31.35832977294922L432.65833282470703,31.35832977294922" marker-end="url(https://stackedit.io/app#arrowhead263)" style="fill:none"></path><defs><marker id="arrowhead263" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g><g class="edgePath LS-C LE-E" style="opacity: 1;" id="L-C-E"><path class="path" d="M365.905798661541,97.4691914202461L407.65833282470703,128.07498931884766L451.7583312988281,128.07498931884766" marker-end="url(https://stackedit.io/app#arrowhead264)" style="fill:none"></path><defs><marker id="arrowhead264" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowheadPath" style="stroke-width: 1px; stroke-dasharray: 1px, 0px;"></path></marker></defs></g></g><g class="edgeLabels"><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-A-B" class="edgeLabel L-LS-A' L-LE-B"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-B-C" class="edgeLabel L-LS-B' L-LE-C"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-C-D" class="edgeLabel L-LS-C' L-LE-D"></span></div></foreignObject></g></g><g class="edgeLabel" style="opacity: 1;" transform=""><g transform="translate(0,0)" class="label"><rect rx="0" ry="0" width="0" height="0"></rect><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;"><span id="L-L-C-E" class="edgeLabel L-LS-C' L-LE-E"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" style="opacity: 1;" id="flowchart-A-1164" transform="translate(58.775001525878906,79.71665954589844)"><rect rx="0" ry="0" x="-50.775001525878906" y="-23.35832977294922" width="101.55000305175781" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-40.775001525878906,-13.358329772949219)"><foreignObject width="81.55000305175781" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">declaration</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-B-1165" transform="translate(205.4166717529297,79.71665954589844)"><rect rx="0" ry="0" x="-45.866668701171875" y="-23.35832977294922" width="91.73333740234375" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-35.866668701171875,-13.358329772949219)"><foreignObject width="71.73333740234375" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">resolution</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-C-1167" transform="translate(341.9708366394043,79.71665954589844)"><polygon points="40.687495422363284,0 81.37499084472657,-40.687495422363284 40.687495422363284,-81.37499084472657 0,-40.687495422363284" transform="translate(-40.687495422363284,40.687495422363284)" class="label-container"></polygon><g class="label" transform="translate(0,0)"><g transform="translate(-11.849998474121094,-13.358329772949219)"><foreignObject width="23.699996948242188" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Act</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-D-1169" transform="translate(480.03333282470703,31.35832977294922)"><rect rx="0" ry="0" x="-47.375" y="-23.35832977294922" width="94.75" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-37.375,-13.358329772949219)"><foreignObject width="74.75" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Save&amp;Plan</div></foreignObject></g></g></g><g class="node default" style="opacity: 1;" id="flowchart-E-1171" transform="translate(480.03333282470703,128.07498931884766)"><rect rx="0" ry="0" x="-28.275001525878906" y="-23.35832977294922" width="56.55000305175781" height="46.71665954589844" class="label-container"></rect><g class="label" transform="translate(0,0)"><g transform="translate(-18.275001525878906,-13.358329772949219)"><foreignObject width="36.55000305175781" height="26.716659545898438"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Make</div></foreignObject></g></g></g></g></g></g></svg></pre>
 <p>Mentre le sezioni .decl, .res, .act definiscono variabili valide globalmente (eccezione fatta per i file di sorgente), le variabili introdotte in .sap e .make sono uniche per ciascuno dei due moduli.<br>
 Questo voldire che una variabile dichiarata in un formato in .decl sarà disponibile in .act, una variabile dichiarata per la prima volta in .act non sarà disponibile in .res, e una variabile dichiarata in .make non sarà disponibile in .sap</p>
 <h1 id="sezione-.decl">Sezione .decl</h1>
@@ -275,10 +275,10 @@ save "{Height};tipo{Quality}" into Savefile
 <h1 id="sezione-.make">Sezione .make</h1>
 <p>La sezione .make ha la sola funzionalità di creare un (o più) dataset seguendo le indicazioni date e con le variabili definite in precedenza.<br>
 Questa funzionalità è però anche la più complessa.<br>
-Prima di costruire un dataset coerente, è necessario procedere ad allineare tutte le variabili eterogenee che si vuole inserire nello stesso dalaset.<br>
-La sezione .make fa questo rispetto a un gruppo di variabili, nel codice sorgenti dette ‘di allineamento’, che vengono usate per creare degli indici virtuali a ogni vettore di variabili rispetto al gruppo di variabili.<br>
-La richiesta di una finestra temporale complessa ( che comprende di prendere k elementi prima di un certo valore e n elementi dopo ) rende più complesso questo processo.<br>
-Una descrizione completa del funzionamento del codice sorgente del .make (ancora in condizioni pietose) viene aggiunta come appendice e non viene approfondita oltre in questa sezione.</p>
+Prima di costruire un dataset coerente, è necessario procedere ad allineare tutte le variabili eterogenee che si vuole inserire nello stesso dalaset.</p>
+<p>La sezione .make fa questo rispetto a un gruppo di variabili, nel codice sorgenti dette ‘di allineamento’, che vengono usate per creare degli indici virtuali a ogni vettore di variabili rispetto al gruppo di variabili.<br>
+La richiesta di una finestra temporale complessa ( che comprende di prendere k elementi prima di un certo valore e n elementi dopo ) rende più complesso questo processo.</p>
+<p>Una descrizione completa del funzionamento del codice sorgente del .make (ancora in condizioni pietose) viene aggiunta come appendice alla fine del documento e non viene approfondita oltre in questa sezione.</p>
 <p>L’elemento fondamentale della sezione .make è l’elemento di tipo <code>plan</code>. Per utilizzare questo elemento, vengono introdotti due tipi di file di salvataggio (che vengono distinti per imporre chiarezza nel codice prodotto), i file di log, <code>log_file</code>, e i file di salvataggio del piano, <code>plan_file</code>. Entrambi vengono dichiarati nello stesso modo di ciascun altra sezione, ovvero con</p>
 <pre><code>log_plan X = "..."
 plan_file Y = "..."
@@ -294,7 +294,61 @@ La tipica dichiarazione di un plan ha la forma</p>
 end plan
 </code></pre>
 <p>Possono esserci più di una dichiarazione di piano in uno stesso file di progetto, a patto che abbiano nomi diversi.</p>
-<p>Gli statement all’interno di una dichiarazione di piano sono di vario tipo.</p>
+<p>Gli statement all’interno di una dichiarazione di piano sono di vario tipo.<br>
+Il primo tipo di statement è quello che compare per primo nella dichiarazione di un plan ed è uno statement di <code>align</code>. Possono esserci più statement di <code>align</code>, ma <strong>tutti fanno riferimento allo stesso allineamento.</strong> Vengono accettate più dichiarazioni di <code>align</code> su più righe solo per una questione di comodità di lettura del codice, non perchè è possibile allineare rispetto a più allineamenti (per ora, almeno).<br>
+Sarà più chiaro in seguito che cosa si intende per allineamento.<br>
+Uno statement di <code>align</code> ha questa forma:</p>
+<pre><code>align &lt;V1&gt;, &lt;V2&gt;, ...&lt;VN&gt; against &lt;AlignVar1&gt;,...&lt;AlignVarN&gt;
+</code></pre>
+<p>Il numero di variabili di allineamento deve essere <strong>uguale</strong> a quello delle variabili da allineare, quindi esiste una coppia ( variabile, variabile di allineamento) per ogni variabile nel piano.<br>
+Come già detto, può esserci più di uno statement di align in sequenza, quindi potrebbe benissimo seguire l’align precedente un ulteriore statement</p>
+<pre><code>align &lt;VarN+1&gt; against &lt;VarAlignN+1&gt;
+</code></pre>
+<p>E VarN+1 e VarAlignN+1 verrebbero aggiunte alla lista delle variabili e delle variabili di allineamento formata dal primo statement.</p>
+<p>Dopo l’elenco di allineamento ha inizio la descrizione vera e propria del piano, con lo statement di inizio</p>
+<pre><code>consider x
+</code></pre>
+<p>che non si traduce in nessuna operazione particolare per l’interprete se non creare l’oggetto responsabili dell’allineamento.<br>
+Seguono un numero variabile di istruzioni di indicazione del tipo di finestra richiesto per <strong>ciascuna variabile (non di allineamento) indicata nella sequenza di align.</strong></p>
+<p>Specifichiamo accuratamente che cosa si intende per ‘finestra’ attraverso un esempio.<br>
+Richiedendo che per predirre un dato futuro si usino, ad esempio, una finestra temporale di un anno di un certo dato definisce implicitamente una finestra mobile che scorre lungo il vettore dei dati.<br>
+Più concretamente, avendo a disposizione 10 dati e dovendo per ogni output fornire i dati della settimana(5 giorni) precedenti, il numero di data point effettivi è pari a 10 - 5 + 1 = 6 come mostrato in figura</p>
+<p><img src="https://static.wixstatic.com/media/e54f51_5955f825854e41e0a179fc07b5b5fff9~mv2.jpg/v1/fill/w_640,h_384,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/e54f51_5955f825854e41e0a179fc07b5b5fff9~mv2.jpg" alt="enter image description here"><br>
+Affinchè abbia senso tenere una finestra che scorre lungo dei dati di origine diversa, è necessario che vengano prima allineati (ad esempio, rispetto ad una data). Questo è lo scopo delle direttive di <code>align</code></p>
+<p>Per richiedere un modo di disporre un parametro, si usa la keyword <code>take</code>. Prima di poter usare la keyword di<code>take</code> è necessario aver prima dichiarato la fine della sezione di allineamento con <code>consider x</code>.<br>
+La keyword <code>take</code> si presenta in variante del seguente schema generale:</p>
+<pre><code>take &lt;numeroP&gt; before x and &lt;numeroD&gt; after x from &lt;Var&gt;
+</code></pre>
+<p>Istruisce l’interprete di inserire nelle righe del dataset numeroP+numeroD+1 campioni presi da Var. I campioni considerati nel <code>before</code> vengono presi ‘prima’ del primo punto di allineamento (ovvero il generico giorno ‘x’), mentre quelli <code>after</code> dopo.<br>
+La keyword di take è disponibile in 3 varianti con effetti leggermente diverse, ovvero</p>
+<pre><code>take &lt;numero&gt; before x from &lt;Var&gt;
+take &lt;numero&gt; after x from &lt;Var&gt;
+take x from VarSingola
+</code></pre>
+<p>Mentre le prime due istruiscono semplicemente di non considerare la finestra anteriore (o posteriore), l’ultima variante segnala di non considerare nessuna finestra ma di prendere un singolo dato da <code>VarSingola</code> per riga di input al modello.<br>
+Il seguente snippet di codice allinea i parametri <code>RiverHeight</code> e <code>Meteo</code> considerando le date presenti nei rispettivi file di sorgente, in seguito richiede di inserire per ogni riga di input al modello 365 campioni del meteo prima di un determinato giorno ‘x’ e 7 campioni del meteo dopo il giorno ‘x’ (il giorno x è sempre incluso!). Per il parametro<code>RiverHeight</code>invece istruisce di considerare una finestra temporale di 7 giorni.</p>
+<pre><code>begin plan River expecting full_recovery
+{
+    align Temperature, Meteo against Date1, Date2
+    
+    consider x
+	take 365 before x and 7 after x from Meteo
+	take 7 before x from Temperature
+	
+}
+</code></pre>
+<p>Per terminare un piano è necessario indicare la variabile di target( per ora una, in futuro un numero arbitrario). E’ possibile, anche per il target, specificare la finestra desiderata (che sarà quindi output del modello, un vettore) ma solo nel ‘futuro’ (per ora, non ha senso chiedere di predire qualcosa nel passato relativo a dati già in possesso).<br>
+Per fare ciò si usa la keyword <code>make</code> in questo modo</p>
+<pre><code>make &lt;varname&gt; the target and take y from &lt;varname&gt;
+</code></pre>
+<p>Per specificare una finestra, è possibile modificare lo statement in</p>
+<pre><code>make &lt;var&gt; the target and take &lt;num&gt; after y from &lt;var&gt;
+</code></pre>
+<p>Per terminare la dichiarazione di un piano si usa la frase chiave</p>
+<pre><code>pair x with target
+</code></pre>
+<p>e, chiusa la graffa, si specifica la direttiva di <code>end plan</code>.<br>
+La compilazione del piano non avviene fino alla direttiva di <code>compile</code> specificata più avanti nella documentazione. Lo scopo delle righe precedenti è quello di istruire la struttura dati addetta all’allineamento su come organizzare le variabili interne.</p>
 <p>Una volta lette tutte le istruzioni interne alla disposizione del piano, è possibile modificare alcuni parametri di salvataggio tramite la keword <code>set</code> in questo modo</p>
 <pre><code>set &lt;param_name&gt; = &lt;new_value&gt;
 </code></pre>
@@ -308,7 +362,112 @@ Infine è possibile compilare definitivamente, quindi generare le righe del data
 <pre><code>compile &lt;PlanName&gt; into &lt;PlanFile&gt;
 </code></pre>
 <p>Come nota tecnica, si fa notare che il salvataggio del modello avviene tramite np.savez. Si potrà accedere al dataset tramite la funzione np.load, o un oggetto DatasetLoader, utilizzando le targhette ‘x name’ e ‘y name’. Si segnala inoltre che il valore predefinito di questi ultimi due campi, se non alterato, è rispettivamente ‘x’ e ‘y’.</p>
+<p>Il seguente esempio rappresenta un file di progetto tipico, che prenda da dei file sorgente rispettivamente le variabili {Stipendio}, {DateStipendi}, {Profitti} {DateProfitti} e genera un dataset.</p>
+<pre><code>.decl
+source_file StipendiFile = "/PATH/EX/Stipendi"
+{DateStip};{Stipendio}
+source_file ProfittiFile = "/PATH/EX/Profitti"
+{DateProf};{Profitti}
+.res
+Profitti: numeric
+Stipendio: numeric
+DateStipendi: categorical
+DateProfitti: categorical
+
+.act
+plot Stipendio
+plot Profitti
+.sap
+.make
+plan_file FileDataset = "/sample/path"
+log_file DatasetLogs = "/logs"
+
+begin plan Rendimento expecting full_recovery
+{
+    align Stipendio, Profitti against DateProf, Datestip
+    consider x
+    take 4 before x from Stipendio
+    
+    make Profitti the target and take y
+    pair x with target
+    
+}
+end plan
+
+set Rendimento y name = "Target profitti"
+set Rendimento x name = "Stipendi pagati"
+
+log Rendimento into DatasetLogs
+compile Rendimento into FileDataset
+</code></pre>
+<p>Lo statement <code>take 4 before x from Stipendi</code> istruisce l’allineatore che per ogni riga del dataset (un unità da dare come imput ad un modello) rappresentante un giorno, devono essere presenti, oltre ai dati del giorno stesso, anche i dati di 4 giorni prima.<br>
+il <code>take y from Profitti</code> significa che ai 4+1 Stipendi presi (4 giorni prima, +1 del giorno considerato) è associato il profitto del giorno considerato.<br>
+Ovvero, il dataset generato avrà questa forma</p>
+
+<table>
+<thead>
+<tr>
+<th>Stipendi</th>
+<th>(una riga,</th>
+<th>un input</th>
+<th>al modello)</th>
+<th></th>
+<th>Profitti</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9 aprile</td>
+<td>10 aprile</td>
+<td>11 aprile</td>
+<td>12 aprile</td>
+<td>13 aprile</td>
+<td>13 aprile</td>
+</tr>
+<tr>
+<td>-29$</td>
+<td>-20$</td>
+<td>-10$</td>
+<td>-15$</td>
+<td>-20$</td>
+<td>+14$</td>
+</tr>
+<tr>
+<td>10 aprile</td>
+<td>11 aprile</td>
+<td>12 aprile</td>
+<td>13 aprile</td>
+<td>14 aprile</td>
+<td>14 aprile</td>
+</tr>
+<tr>
+<td>-20$</td>
+<td>-10$</td>
+<td>-15$</td>
+<td>-20$</td>
+<td>-9$</td>
+<td>+14$</td>
+</tr>
+<tr>
+<td>11 aprile</td>
+<td>12 aprile</td>
+<td>13 aprile</td>
+<td>14 aprile</td>
+<td>15 aprile</td>
+<td>15 aprile</td>
+</tr>
+<tr>
+<td>-10$</td>
+<td>-15$</td>
+<td>-20$</td>
+<td>-9$</td>
+<td>-42$</td>
+<td>+40$</td>
+</tr>
+</tbody>
+</table><p>Si noti come la finestra temporale di 5 giorni (4+1) scorre lungo i dati di origine, creando un numero n di finestre sui dati.</p>
 <h1 id="appendice-mantenimento-delle-finestre-di-scorrimento">Appendice: Mantenimento delle finestre di scorrimento</h1>
+<p>Mancante :(</p>
 </div>
 </body>
 
