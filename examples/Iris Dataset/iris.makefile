@@ -41,13 +41,14 @@ save "{SLength},{SWidth},{PLength},{PWidth}" into SaveScaled
 
 .make
 
-plan_file Plan = "Plan/Path/File"
+plan_file Training = "Training/Path/File"
+plan_file Test = "Test/Path/File"
 log_file Logs = "Log/Path/File"
 
 begin plan IrisPlan expecting full_recovery
 {
 	align SLength, SWidth, PLength, PWidth against Indexes, Indexes, Indexes, Indexes as index
-    align Categories against Indexes as index
+    	align Categories against Indexes as index
 
 	consider x
 	take x from SLength
@@ -61,5 +62,8 @@ begin plan IrisPlan expecting full_recovery
 }
 end plan
 
-compile IrisPlan into Plan
+# Dividi il dataset in due sezioni, una di training e una di test
+split IrisPlan into Training, Test as 70, 30
+
+compile IrisPlan
 log IrisPlan into Logs
