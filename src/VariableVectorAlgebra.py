@@ -84,6 +84,7 @@ class VariableVectorManager:
             {"discretizza": vec_discrete,
              "aggiungi_rumore": vec_add_noise,
              "da_categorico_a_numero": vec_bool_to_num,
+             "shuffle": vec_shuffle,
              "media_zero": vec_zero_mean,
              "media": vec_mean,
              "zero_con_probabilita": vec_zero_with_prob,

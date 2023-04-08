@@ -44,5 +44,15 @@ class DatasetFileError(Exception):
         self.var_id = var_id
 
     def __str__(self):
-        return "File error occured during creating of model" + self.var_id + \
-            ". Check if the file is avaiable and the path is correct"
+        return "File error occurred during creating of model" + self.var_id + \
+            ". Check if the file is available and the path is correct"
+
+
+class BadWindowRequest(Exception):
+    def __init__(self, statement, why):
+        self.why = why
+        self.statement = statement
+
+    def __str__(self):
+        return "Error occurRed while parsing request statement \"" + self.statement + "\": " \
+            + self.why

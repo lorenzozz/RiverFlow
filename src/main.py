@@ -1,5 +1,6 @@
 import gzip
 
+import tensorflow as tf
 import numpy
 import csv
 import time
@@ -13,6 +14,8 @@ if __name__ == '__main__':
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta22.csv'
 
-    model = "C:/Users/picul/OneDrive/Documenti/RiverData/save_dataset.npz"
-    model_data = numpy.load(model, allow_pickle=True)
-    print(sorted(model_data))
+    model = "C:/Users/picul/OneDrive/Documenti/RiverData/Irismodel.npz"
+
+    percs = [0.4, 0.2, 0.4]
+    for perc in percs:
+        print(math.floor(100*perc))

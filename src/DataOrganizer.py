@@ -317,7 +317,7 @@ class DataFormatReader:
                                             "token at line " + line_number)
 
                 save_files[file_name] = line.split('\"')[1].strip()
-            elif 'save' in line:
+            elif 'save ' in line:
                 # Save requested variables with indicate format. a ';' signals csv
                 # to separate into different columns, the rest of the characters are taken
                 # literally and appended to the data value.
@@ -421,9 +421,9 @@ class DataFormatReader:
     @staticmethod
     def parse_csv_line(format_string, line):
         data = []
-
         # Cut head of line
         # print(line, format_string)
+
         if format_string[0]:
             line = line.split(format_string[0], 1)[1]
         for sep in format_string[1:]:
@@ -433,7 +433,6 @@ class DataFormatReader:
                 line = line[1]
         if not format_string[-1]:
             data.append(line)
-
         return data
 
     def parse_file(self, label):
@@ -444,13 +443,15 @@ class DataFormatReader:
             if csv.Sniffer().has_header(csv_file.readline()):
                 lines.__next__()  # Glance over first\ line
 
-            data = [self.parse_csv_line(self.formats[label], ';'.join(line)) for line in lines]
+            data = [self.parse_csv_line(self.formats[label], ';'.join(line)) for line in lines
+                    if not str.isspace(';'.join(line)) and line]
+
         return data
 
 
 if __name__ == '__main__':
     Parse_data = 'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
-    Parse_datat = 'C:/Users/picul/OneDrive/Documenti/riverscript2.txt'
+    Parse_datat = 'C:/Users/picul/OneDrive/Documenti/RiverData/NewIrisScript.txt'
 
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'

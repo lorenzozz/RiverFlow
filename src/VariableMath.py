@@ -5,7 +5,7 @@ def vec_bool_to_num(x, dic):
     """
     Maps a categorical/boolean data onto a dictionary
     :param x: target vector
-    :param dic: dictionary contaning mapping values for each category
+    :param dic: dictionary containing mapping values for each category
     :return: the vector mapped onto the numbers
     """
     return np.array([dic[str_val] for str_val in x])
@@ -18,11 +18,11 @@ def vec_inter_outlier(x, m):
     :param m: algorithm parameter
     :return: vector with outliers brought to the mean
     """
-    a = x
+    a = np.copy(x)
     d = np.abs(a - np.median(a))
     m_dev = np.median(d)
     s = d / m_dev if m_dev else np.zero(len(d))
-    a[s > m] = m*m_dev
+    a[s > m] = m * m_dev
     return a
 
 
@@ -34,7 +34,7 @@ def vec_zero_outliers(x, n):
     :param n: the amount of stds
     :return: the vector with its outliers zeroed out
     """
-    a = x
+    a = np.copy(x)
     dev_stand = np.std(x)
     a[a > n * dev_stand] = 0
     return a
@@ -59,6 +59,18 @@ def vec_mean(x):
     return np.mean(x)
 
 
+def vec_shuffle(x):
+    """
+    Randomly shuffles the target array
+    :param: the target vector
+    :return: a shuffled vector
+    """
+    # Necessary, as np.random.shuffle alters the original array
+    a = np.copy(x)
+    np.random.shuffle(a)
+    return a
+
+
 def vec_std(x):
     """
     Computes the standard deviation of a variable
@@ -79,7 +91,7 @@ def vec_add_noise(x, distribution, *args):
     """
     noise_x = None
     if distribution == "gaussiana":
-        noise_x = x + args[0]+np.random.randn(np.size(x))*args[1]
+        noise_x = x + args[0] + np.random.randn(np.size(x)) * args[1]
     elif distribution == "esponenziale":
         noise_x = x + np.random.exponential(args[0], np.size(x))
     elif distribution == "uniforme":

@@ -203,6 +203,8 @@ class Aligner:
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
 
+        print(bottom_aligns)
+
         # Get top alignment, a mapped value describing the ceiling
         # of the alignment
 
@@ -246,7 +248,9 @@ class DatasetPlanner:
         self.specs = {"x name": "x",
                       "y name": "y",
                       "compression": False,
-                      "error": None}
+                      "error": None,
+                      "split files": None,
+                      "proportions": None}
         self.logs = LogManager()
         self.vec_vars: VariableVectorManager = vector_var
         self.model_name = name
@@ -255,8 +259,10 @@ class DatasetPlanner:
 
     def parse_window_request_statement(self, statement):
         request = [0, 0]
-        var_name = statement.split('from')[1].strip()
-
+        try:
+            var_name = statement.split('from')[1].strip()
+        except IndexError:
+            raise BadWindowRequest(statement, "Missing data source ('from' keyword) ")
         # Composite statement of the type
         # "take <> before x and take <> after x
         if 'and' in statement:
@@ -341,7 +347,16 @@ class DatasetPlanner:
                 self.parse_window_request_statement(statement)
 
     def change_field(self, field_name, new_val):
+        """
+        Change the requested field inside the model. Any label can be accepted
+        as a field, but a limited number of those are actually recognized.
+        :param field_name: the name of the field to be changed
+        :param new_val: the new value of the field
 
+        Usage:
+
+        >> set ModelName compression = gzip
+        """
         if field_name in self.specs:
             self.logs.log(f"> Changing field {field_name} to {new_val}")
             self.specs[field_name] = new_val
@@ -360,7 +375,7 @@ class DatasetPlanner:
         :return: A dataset in the requested location.
 
         Example
-        >>
+        >> compile <Model name> into <Model File>
         """
 
         m_lb, m_ub = max(self.aligner.lower_bound), min(self.aligner.upper_bound)
@@ -392,3 +407,4 @@ class DatasetPlanner:
 
     def log(self, log_file_path):
         self.logs.write_logs(log_file_path)
+
