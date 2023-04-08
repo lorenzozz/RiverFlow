@@ -363,7 +363,7 @@ class DataFormatReader:
         current_row = plan_sec
 
         plan_registered = {}
-        plan_save_files = {}
+        plan_save_files = {"None": None}
         log_save_files = {}
 
         while current_row < len(self.rows):
@@ -390,13 +390,28 @@ class DataFormatReader:
                 elif 'log' in statement:
                     log_label = statement.split('log_file ')[1].split('=')[0].strip()
                     log_save_files[log_label] = file_path
+            elif 'split' in statement:
+
+                model_name = statement.split('split')[1].split('into')[0].strip()
+                file_split = [f.strip() for f in statement.split('into')[1].split('as')[0].split(',')]
+                percentages = [int(s) for s in statement.split('as')[1].split(',')]
+
+                if sum(percentages) != 100:
+                    raise BadSplitRequest(statement, "percentages don't sum up to 100.")
+
+                plan_registered[model_name].change_field("split files", [plan_save_files[f] for f in file_split])
+                plan_registered[model_name].change_field("proportions", percentages)
 
             # Out of compilation commands
             elif 'compile' in statement:
 
                 plan_label = statement.split('compile')[1].split('into')[0].strip()
-                plan_file_label = statement.split('into')[1].strip()
-                plan_registered[plan_label].compile(plan_save_files[plan_file_label])
+
+                # Only acceptable whenever another input has been
+                # specified through splitting
+                p_file_label = statement.split('into')[1].strip() if 'into' in statement else "None"
+
+                plan_registered[plan_label].compile(plan_save_files[p_file_label])
 
             elif 'log ' in statement:
                 plan_label = statement.split('log')[1].split('into')[0].strip()

@@ -20,7 +20,7 @@ class ParenthesisMismatch(Exception):
         self.model_name = model_name
 
     def __str__(self):
-        return "Bad expression delimiters '}' in model <" + str(self.model_name) + "> declaration"
+        return "Bad exprssion delimiters '}' in model <" + str(self.model_name) + "> declaration"
 
 
 class VariableSliceRedefinition(Exception):
@@ -54,5 +54,16 @@ class BadWindowRequest(Exception):
         self.statement = statement
 
     def __str__(self):
-        return "Error occurRed while parsing request statement \"" + self.statement + "\": " \
+        return "Error occurred while parsing request statement \"" + self.statement + "\": " \
             + self.why
+
+
+class BadSplitRequest(Exception):
+    def __init__(self, statement, why):
+        self.why = why
+        self.statement = statement
+
+    def __str__(self):
+        return "Error occurRed while parsing split statement \"" + self.statement + "\": " \
+            + self.why
+
