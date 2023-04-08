@@ -1,21 +1,12 @@
-import gzip
+from DataOrganizer import DataFormatReader
 
-import tensorflow as tf
-import numpy
-import csv
-import time
-from LogManager import *
-from Errors import *
-from DataOrganizer import *
-
-import numpy as np
+__licence__ = 'Comune di Val Sesia, agenzia federale'
+__version__ = '0.1'
+__dependencies__ = ['numpy 1.20', 'tensorflow .', 'matplotlib .']
 
 if __name__ == '__main__':
-    DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
-    CSVRiverPath = 'sesia-scopello-scopetta22.csv'
 
-    model = "C:/Users/picul/OneDrive/Documenti/RiverData/Irismodel.npz"
+    make_file = "/your/path"
 
-    percs = [0.4, 0.2, 0.4]
-    for perc in percs:
-        print(math.floor(100*perc))
+    Make_File = DataFormatReader(make_file)
+    Make_File.interpret()

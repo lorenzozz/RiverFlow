@@ -62,7 +62,8 @@ class DataFormatReader:
         """ Read data from format path and store lines into self.Rows
         :return: None """
         self.rows = self.data.readlines()
-        self.rows = [r for r in self.rows if not str.isspace(r)]
+        # Exclude blank lines and whole-line comments from interpretation
+        self.rows = [r for r in self.rows if not str.isspace(r) and not r[0] == '#']
 
     def parse_part_one(self):
         """ Parse first part of format description file into a list of input files along
@@ -199,7 +200,6 @@ class DataFormatReader:
                 else:
                     copy_action.append((new_var, reference))
             else:
-                print(declaration)
                 raise BadFormatStyle(self.format_path, f"Unrecognized token at line "
                                      + source_line)
 
@@ -447,6 +447,23 @@ class DataFormatReader:
                     if not str.isspace(';'.join(line)) and line]
 
         return data
+
+    def interpret(self):
+        """
+        Go through the pipeline of interpreting all five section for requested make file
+        :returns None
+        """
+        self.create_data()
+        # .decl
+        self.parse_part_one()
+        # .res
+        self.parse_part_two()
+        # .act
+        self.act()
+        # .sap
+        self.parse_sap()
+        # .make
+        self.parse_make()
 
 
 if __name__ == '__main__':

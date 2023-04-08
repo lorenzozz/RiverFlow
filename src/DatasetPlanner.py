@@ -203,8 +203,6 @@ class Aligner:
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
 
-        print(bottom_aligns)
-
         # Get top alignment, a mapped value describing the ceiling
         # of the alignment
 
