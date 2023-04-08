@@ -243,16 +243,37 @@ class Aligner:
 class DatasetPlanner:
     def __init__(self, raw_code, vector_var, name):
         self.raw = raw_code
-        self.specs = {"x name": "x",
+        self.specs = {"name": name,
+                      "x name": "x",
                       "y name": "y",
                       "compression": False,
                       "error": None,
                       "split files": None}
         self.logs = LogManager()
         self.vec_vars: VariableVectorManager = vector_var
-        self.model_name = name
 
         self.aligner = None
+
+    def _gen_dataset_description(self):
+        """
+        Draws a graphical description of the model onto the log file. The description
+        contains both the labels of the variable used, the window considered in the model and
+        their order. The graph generated should be of help when trying to build data to feed into
+        the model after training has completed.
+        :return: Logs a graphical description of the model.
+        """
+        var_w = self.aligner.windows
+        vars = self.aligner.variables
+        t_vars = self.aligner.target_var
+
+        c_tok, x_tok = '<---->', '<-^^->'
+        n_f = d_f = g_f = ""
+        for var in vars:
+            l_wn, t_wn = var_w[var]
+            b_wn = c_tok*l_wn if l_wn < 4 else c_tok+f"..{l_wn-2}.." + c_tok
+            t_wn = c_tok*l_wn if t_wn < 4 else c_tok+f"..{t_wn-2}.." + c_tok
+            r = b_wn+x_tok+t_wn
+            print(r)
 
     def _parse_window_request_statement(self, statement):
         request = [0, 0]
@@ -285,13 +306,11 @@ class DatasetPlanner:
             self.change_field("error", error_mode)
 
         if sum([statement.count('}') + statement.count('{') for statement in self.raw]) != 2:
-            raise ParenthesisMismatch(self.model_name)
+            raise ParenthesisMismatch(self.specs['name'])
 
         align_vars = []
         align_factors = []
-        align_format = None
-        alignment_mode = None
-        target_variable = None
+        align_format = alignment_mode = target_variable = None
 
         plan = [li for li in self.raw[1:end_of_decl] if li not in {'{\n', '}\n'} and not str.isspace(li)]
 
@@ -388,8 +407,11 @@ class DatasetPlanner:
                 # use double star operator **dic to assign user-indicated names
                 try:
                     numpy.savez(path, **{self.specs['x name']: x_data, self.specs['y name']: y_data})
+                    self.logs.log("> Successfully compiled the plan as a (x,y) pair with labels " +
+                                  self.specs['x name'] + " e " + self.specs['y name'])
+
                 except FileNotFoundError or FileExistsError:
-                    raise DatasetFileError(self.model_name)
+                    raise DatasetFileError(self.specs['name'])
 
             elif self.specs['split files'] is not None and self.specs['proportions']:
                 """ 
@@ -411,6 +433,10 @@ class DatasetPlanner:
                 # (At this point, self.spect cannot be None)
                 # noinspection PyTypeChecker
                 [np.savez(file, **n) for file, n in zip(self.specs['split files'], names)]
+
+                self.logs.log("> Successfully compiled the plan as a list of (x,y) pairs with labels \"" +
+                              self.specs['x name'] + "\" e \"" + self.specs['y name'] + "\" split with "
+                              " percentages " + str(self.specs['proportions']))
 
             else:
                 raise DatasetFileError("No path was specified nor a partition was assigned to the model.")
@@ -455,7 +481,7 @@ class DatasetPlanner:
             x_data = np.hstack([self.aligner.get_convolution(var) for var in no_target_v])
             y_data = self.aligner.get_convolution(self.aligner.target_var)
         except ValueError:
-            raise DatasetInternalError(self.model_name)
+            raise DatasetInternalError(self.specs['name'])
 
         self._save_model_data(x_data, y_data, save_file)
 
