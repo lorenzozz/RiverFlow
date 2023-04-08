@@ -14,23 +14,24 @@ Riportiamo un estratto dei file di risultato, dopo il trattamento specificato in
 	
 > \>\> Your/Plan/File
 > 
-> 'x':
-> sepal_length ---  sepal_width--- petal_length --- petal_length
-> [  [-0.85273973,  0.14863014, -2.58219178, -1.00890411],
->     [ 0.44726027, -0.25136986,  1.31780822,  0.29109589]
->    [....] the other 144 entries... ]
+> 'x': \
+> sepal_length ---  sepal_width--- petal_length --- petal_length: \
+> [ [-0.85273973,  0.14863014, -2.58219178, -1.00890411], \
+> [ 0.44726027, -0.25136986,  1.31780822,  0.29109589]	\
+> [....] the other 144 entries... ]
 >    
->    'y':
->    [ [0], # iris_setosa, [2], # iris_virginica, [2] # iris_virginica
- [...] other 144 entries... ]
+> 'y': \
+> [ [0], # iris_setosa, [2], # iris_virginica, [2] # iris_virginica \
+> [...] other 144 entries... ] \
 > 
-Il modello ha prodotto i seguenti log:
-> \>\>/File/Di/Log
-> 
-> Changing field error to full_recovery
-> Generated 146 data points from input configuration
-> Non target variables:['SLength', 'SWidth', 'PLength', 'PWidth'], Target variables: Categories
-> Saved model as a x/y pair inside "Your/Plan/File"
+Il modello ha prodotto i seguenti log: 
+> \>\>/File/Di/Log \
+>  \
+> Changing field error to full_recovery \
+> Generated 146 data points from input configuration \
+> Non target variables:['SLength', 'SWidth', 'PLength', 'PWidth'], Target variables: Categories \
+> Saved model as a x/y pair inside "Your/Plan/File" \
+
 > 
 
 
