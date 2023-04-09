@@ -76,12 +76,22 @@ class Aligner:
         #                     ^ Begin of transcription
 
         budget = self.budgets[var_name]
-        for bound in range(2):
-            if request[bound] > self.budgets[var_name][bound]:
-                self.windows[var_name][bound] -= request[bound] - budget[bound]
-                self.budgets[var_name][bound] = 0
-            else:
-                self.budgets[var_name][bound] -= request[bound]
+
+        # TODO: REFactor
+        # cant use for loop as lower window must grow while upper window must decrease
+        # Lower window
+        if request[0] > budget[0]:
+            self.windows[var_name][0] += request[0] - budget[0]
+            self.budgets[var_name][0] = 0
+        else:
+            self.budgets[var_name][0] -= request[0]
+
+        # Upper window
+        if request[1] > budget[1]:
+            self.windows[var_name][1] -= request[1] - budget[1]
+            self.budgets[var_name][1] = 0
+        else:
+            self.budgets[var_name][1] -= request[1]
 
     def show_status(self):
         print(self.windows)
@@ -254,26 +264,55 @@ class DatasetPlanner:
 
         self.aligner = None
 
+    def __data_row_desc(self, vs, align: str) -> list[str]:
+        """
+        Generate a description for the variables given as input according
+        to the windows kept by the aligner authority.
+        # TODO: docs
+
+        :param vs: requested variables
+        :param align: generic index aligning token
+        :return: a list containing three rows, as specified above
+        """
+
+        c_tok, x_tok = '<----> ', '<-^^-> '
+        n_f = d_f = g_f = "> "
+        for var in vs:
+            l_wn, t_wn = self.aligner.window_generation_type[var]
+            b_wn = c_tok * l_wn if l_wn < 4 else c_tok + f"..{l_wn - 2}.." + c_tok
+            u_wn = c_tok * t_wn if t_wn < 4 else c_tok + f"..{t_wn - 2}.. " + c_tok
+            r = b_wn + x_tok + u_wn
+            v_l = f"| {var} "
+            w_l = "| " + (f"{l_wn} before x" if b_wn else "").ljust(len(b_wn), ' ') + f"{align.upper()}   " + \
+                  (f" {t_wn} before {align.lower()}" if t_wn else "").ljust(len(u_wn), ' ')
+            max_l = max(len(r), len(v_l), len(w_l))
+            r, w_l, v_l = r.ljust(max_l), w_l.ljust(max_l), v_l.ljust(max_l)
+            n_f += v_l
+            d_f += w_l
+            g_f += r
+
+        return [n_f, d_f, g_f]
+
     def _gen_dataset_description(self):
         """
         Draws a graphical description of the model onto the log file. The description
         contains both the labels of the variable used, the window considered in the model and
         their order. The graph generated should be of help when trying to build data to feed into
         the model after training has completed.
+
+        The actual string generation work is done by __data_row_desc.
+
         :return: Logs a graphical description of the model.
         """
-        var_w = self.aligner.windows
-        vars = self.aligner.variables
-        t_vars = self.aligner.target_var
 
-        c_tok, x_tok = '<---->', '<-^^->'
-        n_f = d_f = g_f = ""
-        for var in vars:
-            l_wn, t_wn = var_w[var]
-            b_wn = c_tok*l_wn if l_wn < 4 else c_tok+f"..{l_wn-2}.." + c_tok
-            t_wn = c_tok*l_wn if t_wn < 4 else c_tok+f"..{t_wn-2}.." + c_tok
-            r = b_wn+x_tok+t_wn
-            print(r)
+        # MULTI TARGET INCAPABLE!!
+        t_vars = [self.aligner.target_var]
+        nt_vars = [v for v in self.aligner.variables if v not in t_vars]
+
+        x_desc, y_desc = self.__data_row_desc(nt_vars, 'x'), self.__data_row_desc(t_vars, 'y')
+        # Log both target and non target variables description onto the log file
+        self.logs.log_n(["\n> DATA FED INTO THE MODEL:\n"] + x_desc)
+        self.logs.log_n(["\n> EXPECTED OUTPUT OF THE MODEL:\n"] + y_desc)
 
     def _parse_window_request_statement(self, statement):
         request = [0, 0]
@@ -426,7 +465,8 @@ class DatasetPlanner:
                 """
                 props: list = self.specs['proportions']
 
-                sections = np.ceil(np.cumsum(np.array(props[:-1]) / 100.0) * np.size(x_data, axis=0) + 1).astype(np.int32)
+                sections = np.ceil(np.cumsum(np.array(props[:-1]) / 100.0) * np.size(x_data, axis=0) + 1).astype(
+                    np.int32)
                 x_s, y_s = np.split(x_data, sections), np.split(y_data, sections)
                 names: list = [{self.specs['x name']: x, self.specs['y name']: y} for x, y in zip(x_s, y_s)]
 
@@ -435,7 +475,7 @@ class DatasetPlanner:
                 [np.savez(file, **n) for file, n in zip(self.specs['split files'], names)]
 
                 self.logs.log("> Successfully compiled the plan as a list of (x,y) pairs with labels \"" +
-                              self.specs['x name'] + "\" e \"" + self.specs['y name'] + "\" split with "
+                              self.specs['x name'] + "\" e \"" + self.specs['y name'] + "\" split with " +
                               " percentages " + str(self.specs['proportions']))
 
             else:
@@ -484,6 +524,7 @@ class DatasetPlanner:
             raise DatasetInternalError(self.specs['name'])
 
         self._save_model_data(x_data, y_data, save_file)
+        self._gen_dataset_description()
 
         return
 

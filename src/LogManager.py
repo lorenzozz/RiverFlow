@@ -14,7 +14,7 @@ class LogManager:
     def separate(self):
         self.log("\n*************\n")
 
-    def log_n(self, *var_arg):
+    def log_n(self, var_arg):
         for arg in var_arg:
             self.log(arg)
 
