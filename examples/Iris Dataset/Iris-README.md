@@ -7,9 +7,10 @@ Il dataset in esame contiene quattro parametri, lunghezza e larghezza del petalo
 Le due direttive di makefile leggono il dataset dalla memoria, lo riordinano randomicamente mantenendo l'ordine degli oggetti di ogni riga!) e scalano numericamente i vari campi per poi porli in un unico piano come coppia (input-output atteso). 
 L'input sarà quindi un vettore di 4 elementi contenente i parametri elencati precedentemente e l'output sarà un numero che codifica uno dei tre tipi di fiori: 0 per le 'iris setosa', 1 per le 'Iris-versicolor' e 2 per le 'Iris-virginica'.
 
-Dopo la compilazione del piano, i dati sono inseriti nel file di salvataggio nel formato .npz di numpy. Saranno poi accessibili tramite la direttiva numpy.load['x'] e numpy.load['y'] o tramite un oggetto DatasetLoader.
+Il dataset è poi diviso in due dataset parziali, uno di training e l'altro di test, rispettivamente costituiti dal 70% e dal 30& dei dati di partenza.
+Dopo la compilazione del piano, i dati sono inseriti nei due file di salvataggio specificati dalla direttiva di split nel formato .npz di numpy. Saranno poi accessibili tramite la direttiva numpy.load['x'] e numpy.load['y'] o tramite un oggetto DatasetLoader(Non ancora implementato).
 
-Riportiamo un estratto dei file di risultato, dopo il trattamento specificato in precedenza.
+Riportiamo un estratto dei file di risultato di training, dopo il trattamento specificato in precedenza.
 
 	
 > \>\> Your/Plan/File
