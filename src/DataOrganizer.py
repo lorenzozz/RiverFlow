@@ -486,10 +486,4 @@ if __name__ == '__main__':
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
     dataFormat = DataFormatReader(Parse_datat)
-
-    dataFormat.create_data()
-    dataFormat.parse_part_one()
-    dataFormat.parse_part_two()
-    dataFormat.act()
-    dataFormat.parse_sap()
-    dataFormat.parse_make()
+    dataFormat.interpret()

@@ -200,53 +200,58 @@ class Aligner:
         for data in var_data:
             intersection = np.intersect1d(data, intersection)
 
-        # Get bottom alignment, a mapped value describing how different
-        # vectors map onto each other in alignment
+        """
+        Get bottom alignment, a mapped value describing how different
+        vectors map onto each other in alignment
 
-        # example:
-        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
-        # Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
-        # Alignment described:
-        # 0   1   2   3   4                 window: (0, 4) bottom_align = 0
-        #         2   3   4   5   6         window: (2, 6) bottom_align = 2
+        example:
+        Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
+        Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
+        Alignment described:
+        0   1   2   3   4                 window: (0, 4) bottom_align = 0
+                2   3   4   5   6         window: (2, 6) bottom_align = 2
+        """
         bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in var_data]
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
 
-        # Get top alignment, a mapped value describing the ceiling
-        # of the alignment
+        """
+        Get top alignment, a mapped value describing the ceiling
+        of the alignment
 
-        # example:
-        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
-        # Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
-        # Alignment described:
-        # 0   1   2   3   4                 window: (0, 4) top_align = 4
-        #         2   3   4   5   6         window: (2, 6) bottom_align = 6
-
+        example:
+        Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
+        Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
+        Alignment described:
+        0   1   2   3   4                 window: (0, 4) top_align = 4
+                2   3   4   5   6         window: (2, 6) bottom_align = 6
+        """
         sizes = [np.size(data) for data in var_data]
         up_locs = [size + bottom - 1 for size, bottom in zip(sizes, bottom_aligns)]
         min_up = min(up_locs)
 
-        # Create windows and budgets for each data source to use in
-        # windowing algorithm
+        """
+        Create windows and budgets for each data source to use in
+        windowing algorithm
 
-        # example:
-        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
-        # Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
-        # Alignment described:
-        # 0   1   2   3   4                 window: (0, 4)
-        #         2   3   4   5   6         window: (2, 6)
-        #
-        # Budgets are computed as follows
-        # INIT_ALIGN_BOTTOM = max(bottom-aligns)
-        # INIT_ALIGN_TOP = min(top-aligns)
-        # Bottom_budget[i] = INIT_ALIGN - bottom[i]
-        # Top_budget[i] = top[i] - INIT_ALIGN_TOP
+        example:
+        Data1: [...], Data1_alignment : [0, 1, 2, 3, 4]
+        Data2: [...], Data2_alignment : [2, 3, 4, 5, 6]
+        Alignment described:
+        0   1   2   3   4                 window: (0, 4)
+                2   3   4   5   6         window: (2, 6)
+        
+        Budgets are computed as follows
+        INIT_ALIGN_BOTTOM = max(bottom-aligns)
+        INIT_ALIGN_TOP = min(top-aligns)
+        Bottom_budget[i] = INIT_ALIGN - bottom[i]
+        Top_budget[i] = top[i] - INIT_ALIGN_TOP
 
-        # Align on: self.init_align
+        Align on: self.init_align
+        """
         self.windows = {var: [b, u] for b, u, var in zip(bottom_aligns, up_locs, self.variables)}
-        self.budgets = {var: [b, u] for b, u, var in zip([self.init_align - bot for bot in bottom_aligns],
-                                                         [top - min_up for top in up_locs], self.variables)}
+        self.budgets = {var: [b, u] for b, u, var in zip([self.init_align - b for b in bottom_aligns],
+                                                         [t - min_up for t in up_locs], self.variables)}
         self.initial_align = {var: bottom[0] for var, bottom in zip(self.windows.keys(), self.windows.values())}
 
 
@@ -268,7 +273,10 @@ class DatasetPlanner:
         """
         Generate a description for the variables given as input according
         to the windows kept by the aligner authority.
-        # TODO: docs
+        The description format is of the type:
+        | <varName>
+        | <LowerWindowDesc> x <UpperWindowDesc>
+        | Drawing of the window
 
         :param vs: requested variables
         :param align: generic index aligning token
@@ -279,8 +287,8 @@ class DatasetPlanner:
         n_f = d_f = g_f = "> "
         for var in vs:
             l_wn, t_wn = self.aligner.window_generation_type[var]
-            b_wn = c_tok * l_wn if l_wn < 4 else c_tok + f"..{l_wn - 2}.." + c_tok
-            u_wn = c_tok * t_wn if t_wn < 4 else c_tok + f"..{t_wn - 2}.. " + c_tok
+            b_wn = c_tok * l_wn if l_wn < 4 else c_tok + f" ..{l_wn - 2}.. " + c_tok
+            u_wn = c_tok * t_wn if t_wn < 4 else c_tok + f" ..{t_wn - 2}.. " + c_tok
             r = b_wn + x_tok + u_wn
             v_l = f"| {var} "
             w_l = "| " + (f"{l_wn} before x" if b_wn else "").ljust(len(b_wn), ' ') + f"{align.upper()}   " + \
