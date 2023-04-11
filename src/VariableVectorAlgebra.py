@@ -48,7 +48,7 @@ class VariableVectorManager:
                               "every variable is treated by value, not reference")
         try:
             if 'print(' in statement:
-                print(eval(statement.split('print(')[1].split(')')[0].strip(), self.grammar))
+                print("* ", eval(statement.split('print(')[1].split(')')[0].strip(), self.grammar))
             else:
                 ref_var = statement.split('=', 1)[0].strip()
                 action = statement.split('=', 1)[1].strip()
@@ -94,6 +94,7 @@ class VariableVectorManager:
              "lunghezza": np.size,
              "tronca": vec_truncate,
              "one_hot": vec_one_hot,
+             "stack": vec_stack,
              "gaussiana": "gaussiana",  # Label
              "esponenziale": "esponenziale",  # Label
              "uniforme": "uniforme",  # Label

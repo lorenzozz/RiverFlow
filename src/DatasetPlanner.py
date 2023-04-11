@@ -160,13 +160,19 @@ class Aligner:
         # Trim data up to usable window in order to slide window over it and collect n samples
         trimmed_data = self.var_vec.get_variable(var_name)[l_bot:l_top]
         var = self.var_vec.get_variable(var_name)
-        # Else attempt not is_istance(var[0], '__next__')
 
-        print(var)
-        if var is not None and not np.iterable(var[0]):
+        # Else attempt not is_instance(var[0], '__next__')
+
+        if not np.iterable(var[0]):
+            # Var is a 1-d numpy vector (var.ndim==1)
             conv_data = np.lib.stride_tricks.sliding_window_view(trimmed_data, slider)
         else:
-            conv_data = []
+            # Each element of var is an iterable. Currently support just one-dimensional data
+            # (In the future, it may support tensor maps)
+            e_size = np.size(var[0])
+
+            views = np.lib.stride_tricks.sliding_window_view(trimmed_data, (slider, e_size))
+            conv_data = np.array([np.concatenate(*w) for w in views])
         return conv_data
 
     def singleton(self, var_name):

@@ -134,6 +134,13 @@ def vec_one_hot(x):
     r = np.stack(axis=-1)
     NotImplemented
 
+
+def vec_stack(*args):
+    """ Returns a pile of stacked vector compatible with the
+    windowing algorithm adopted in models"""
+    return np.stack([args], axis=1)
+
+
 def vec_interval(a, b, n):
     """
     Returns n evenly spaced sample from linear interval[a,b]
