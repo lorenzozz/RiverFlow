@@ -478,6 +478,7 @@ class DataFormatReader:
 
 
 if __name__ == '__main__':
+
     Parse_data = 'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
     Parse_datat = 'C:/Users/picul/OneDrive/Documenti/RiverData/NewIrisScript.txt'
 

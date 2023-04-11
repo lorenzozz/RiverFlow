@@ -1,5 +1,6 @@
 import numpy
 import numpy as np
+import tensorflow as tf
 
 from DataOrganizer import DataFormatReader
 
@@ -19,7 +20,25 @@ if __name__ == '__main__':
     a= np.arange(0, 10)
     b = np.arange(2, 12)
     c = np.arange(5, 15)
-    x = np.vstack((a,b,c))
-    print(x)
-    m = np.lib.stride_tricks.sliding_window_view(x, 3, axis=1)
-    print(m)
+    x = np.stack((a,b,c), axis=1)
+    # print(len(x[0]))
+    a = ..., 0
+    print(a[0])
+    a = np.arange(0,10)
+    a = a[0]
+
+    if a is not None and hasattr(a, '__len__'):
+        print("1")
+
+    if np.iterable(a):
+        print("2")
+
+    if hasattr(a, '__len__'):
+        print("3")
+
+    if np.size(a) > 0:
+        print("4")
+
+    NewModel = tf.keras.models.Sequential()
+    # m = np.lib.stride_tricks.sliding_window_view(x, (2, 3))
+    # print([np.concatenate(*w) for w in m])

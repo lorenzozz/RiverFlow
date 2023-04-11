@@ -9,7 +9,7 @@ class LogManager:
         self.log_buffer = ""
 
     def log(self, text):
-        self.log_buffer +=  text +'\n'
+        self.log_buffer += text + '\n'
 
     def separate(self):
         self.log("\n*************\n")
