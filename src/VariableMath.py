@@ -137,7 +137,6 @@ def vec_one_hot(x, ordering):
     :param x: the target vector
     :returns: one hot encoding
     """
-    # Needs ordering, cast to list
     ordering = np.array(ordering).astype(str)
     o_hot = np.zeros((len(ordering), np.size(x)))
     for label, target in zip(ordering, o_hot):

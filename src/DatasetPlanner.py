@@ -222,6 +222,7 @@ class Aligner:
         0   1   2   3   4                 window: (0, 4) bottom_align = 0
                 2   3   4   5   6         window: (2, 6) bottom_align = 2
         """
+
         bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in var_data]
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
@@ -237,6 +238,7 @@ class Aligner:
         0   1   2   3   4                 window: (0, 4) top_align = 4
                 2   3   4   5   6         window: (2, 6) bottom_align = 6
         """
+
         sizes = [np.size(data) for data in var_data]
         up_locs = [size + bottom - 1 for size, bottom in zip(sizes, bottom_aligns)]
         min_up = min(up_locs)
@@ -260,6 +262,7 @@ class Aligner:
 
         Align on: self.init_align
         """
+
         self.windows = {var: [b, u] for b, u, var in zip(bottom_aligns, up_locs, self.variables)}
         self.budgets = {var: [b, u] for b, u, var in zip([self.init_align - b for b in bottom_aligns],
                                                          [t - min_up for t in up_locs], self.variables)}
@@ -341,6 +344,9 @@ class DatasetPlanner:
             raise BadWindowRequest(statement, "Missing data source ('from' keyword) ")
         # Composite statement of the type
         # "take <> before x and take <> after x
+
+        # TODO: change syntax in
+        # take n before x and take n2 after x to refactor if
         if 'and' in statement:
             request[0] = int(statement.split('take')[1].split('before')[0].strip())
             request[1] = int(statement.split('and')[1].split('after')[0].strip())
@@ -370,7 +376,7 @@ class DatasetPlanner:
         align_factors = []
         align_format = alignment_mode = target_variable = None
 
-        plan = [li for li in self.raw[1:end_of_decl] if li not in {'{\n', '}\n'} and not str.isspace(li)]
+        plan = [l for l in self.raw[1:end_of_decl] if l not in {'{\n', '}\n'} and not str.isspace(l)]
 
         for statement in plan:
 
@@ -484,12 +490,11 @@ class DatasetPlanner:
                 """
                 props: list = self.specs['proportions']
 
-                sections = np.ceil(np.cumsum(np.array(props[:-1]) / 100.0) * np.size(x_data, axis=0) + 1).astype(
-                    np.int32)
-                x_s, y_s = np.split(x_data, sections), np.split(y_data, sections)
+                secs = np.ceil(np.cumsum(np.array(props[:-1]) / 100.0) * np.size(x_data, axis=0) + 1).astype(np.int32)
+                x_s, y_s = np.split(x_data, secs), np.split(y_data, secs)
                 names: list = [{self.specs['x name']: x, self.specs['y name']: y} for x, y in zip(x_s, y_s)]
 
-                # (At this point, self.spect cannot be None)
+                # (At this point, self.spect cannot be None, disable buggy inspection)
                 # noinspection PyTypeChecker
                 [np.savez(file, **n) for file, n in zip(self.specs['split files'], names)]
 

@@ -1,8 +1,4 @@
-import numpy
 import numpy as np
-import tensorflow as tf
-
-from DataOrganizer import DataFormatReader
 
 __licence__ = 'Comune di Val Sesia, agenzia federale'
 __version__ = '0.1'
@@ -15,6 +11,5 @@ if __name__ == '__main__':
         print(model['Gianfranco'][0])
         print(model['Gianfranco'].shape)
         print(model['y'][0])
-        #numpy.savez(make_file+'k')
-    #Make_File = DataFormatReader(make_file)
+    # Make_File = DataFormatReader(make_file)
     # Make_File.interpret()

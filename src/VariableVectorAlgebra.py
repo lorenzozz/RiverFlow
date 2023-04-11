@@ -1,5 +1,3 @@
-import numpy
-
 from MathErrors import *
 from VariableMath import *
 
@@ -57,8 +55,8 @@ class VariableVectorManager:
                 self.grammar[ref_var] = self.variables[ref_var]
 
         except Exception as BroadException:
-            NotImplemented
-            print(BroadException)
+            raise GenericMathError(f"A math error occured during the execution of statement \"{statement} \""
+                                   f". Description of the error: {BroadException.__str__()}")
 
     def get_useful_error_description(self, exception, statement):
         NotImplemented
@@ -79,26 +77,26 @@ class VariableVectorManager:
     def load_grammar_mapper(self):
 
         # Predefined function aliases.
-        self.grammar = \
-            {"discretizza": vec_discrete,
-             "aggiungi_rumore": vec_add_noise,
-             "da_categorico_a_numero": vec_bool_to_num,
-             "shuffle": vec_shuffle,
-             "media_zero": vec_zero_mean,
-             "media": vec_mean,
-             "zero_con_probabilita": vec_zero_with_prob,
-             "dev_stand": vec_std,
-             "azzera_outlier": vec_zero_outliers,
-             "interpola_outlier": vec_inter_outlier,
-             "intervallo": vec_interval,
-             "lunghezza": np.size,
-             "tronca": vec_truncate,
-             "one_hot_encode": vec_one_hot,
-             "stack": vec_stack,
-             "gaussiana": "gaussiana",  # Label
-             "esponenziale": "esponenziale",  # Label
-             "uniforme": "uniforme",  # Label
-             }
+        self.grammar = {
+            "discretizza": vec_discrete,
+            "aggiungi_rumore": vec_add_noise,
+            "da_categorico_a_numero": vec_bool_to_num,
+            "shuffle": vec_shuffle,
+            "media_zero": vec_zero_mean,
+            "media": vec_mean,
+            "zero_con_probabilita": vec_zero_with_prob,
+            "dev_stand": vec_std,
+            "azzera_outlier": vec_zero_outliers,
+            "interpola_outlier": vec_inter_outlier,
+            "intervallo": vec_interval,
+            "lunghezza": np.size,
+            "tronca": vec_truncate,
+            "one_hot_encode": vec_one_hot,
+            "stack": vec_stack,
+            "gaussiana": "gaussiana",  # Label
+            "esponenziale": "esponenziale",  # Label
+            "uniforme": "uniforme",  # Label
+        }
         self.grammar.update(self.variables)
 
     @staticmethod
@@ -106,8 +104,8 @@ class VariableVectorManager:
         try:
             return {"categorical": str,
                     "boolean": str,
-                    "numeric": numpy.float64,
-                    "integer": numpy.int32}[var_type]
+                    "numeric": np.float64,
+                    "integer": np.int32}[var_type]
         except KeyError:
             raise VariableTypeUnspecified(f"Variable {var_type} has no specified type.")
 
