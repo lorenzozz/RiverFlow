@@ -156,15 +156,15 @@ Altre due funzionalità sono le seguenti
 Si fa notare che media_zero() è solo un alias per
 
     Id = Id - media(Id)
-   Alcune funzione si propongono di attenuare l'effetto di outlier, ad esempio
+    
+Alcune funzione si propongono di attenuare l'effetto di outlier, ad esempio
    
-
     azzera_outlier(x, n)
     """ Azzera tutti i valori che superano di n volte la
     deviazione standard di X. Maggiore è n, più è alta la
     soglia di tolleranza """
-   e
-   
+
+e   
 
     interpola_outlier(X, m)
     """ Cerca di interpolare ad un valore non nullo ma 
@@ -174,7 +174,7 @@ Si fa notare che media_zero() è solo un alias per
     ma che m è un parametro che controlla una scelta più
     complessa"""
 	
-Il seguente snippet modifica la variabile indicata, rimuovendo i valori che superano di 7 volte la deviazione standard della variabile, probabilmente frutto di errori (probabilmente!)
+Il seguente snippet modifica la variabile indicata, rimuovendo i valori che superano di 7 volte la deviazione standard della variabile, probabilmente frutto di errori __(probabilmente!)__
 
     .act
     new AlteredVar = azzera_outlier(Variabile, 7)
@@ -204,7 +204,7 @@ Altre funzioni invece offrono solo un ausilio, come le seguenti (di minore rilev
      
     da_categorico_a_numerico(x, dic)
     """ Ritorna un vettore in cui i valori di x sono stati
-    mappati a valori numerici tramite il dizionario dic
+    mappati a valori numerici tramite il dizionario dic"""
    
 Oltre alle funzionalità standard elencate, e ai pacchetti importabili, la sezione .act dispone della capacità di emettere sulla console i valori delle variabili tramite l'istruzione print(<espressione\>), in questo modo
 
@@ -212,7 +212,8 @@ Oltre alle funzionalità standard elencate, e ai pacchetti importabili, la sezio
     new Var = Media(Height)
     print(Var)
     
-    >>Output: ...
+    >>Output: 174.23[..]
+    
 In aggiunta, la sezione .act dà la possibilità di tracciare grafici delle variabili create e modificate, tramite la funzionalità della keyword plot.
 Due versioni della keyword plot sono implementate. La prima ha la forma
 
@@ -224,10 +225,36 @@ La seconda modalità è della forma
 
 Nessuna variabile sulle ascisse viene specificata, e la variabile Y è messa a grafico semplicemente con un asse fittizio  (come un grafico normale) mantenendo l'ordine degli elementi di Y.
 
-Prima di presentare alcuni esempi, si fa notare che la sezione di .act è puramente 'assegnativa'. Questo voldire che nessuna variabile viene modificata per riferimento, ma solo per riassegnamento, ovvero uno statement del tipo
+Prima di presentare alcuni esempi, si vuol ribadire che __la sezione di .act è puramente 'assegnativa'.__ Questo voldire che __nessuna variabile viene modificata per riferimento, ma solo per riassegnamento,__ ovvero uno statement del tipo
 
     A = azzera_outlier(x)
-   non ha alcun effetto su x, ma solo su a!
+__non ha alcun effetto su x, ma solo su a!__
+
+La sezione di .act ha inoltre supporto per feature vettoriali, ovvero feature non numeriche ma che codificano l'informazioni tramite un certo encoding che rihciede una variabile vettoriale, ad esempio l'encoding bag-of-words o one-hot.
+Per raggruppare variabili distinte in una stessa feature vettoriale, è presente nativamente la funzione di stack()
+
+    stack(arg_1,..,arg_n)
+     """ Ritorna una struttura contenente i vettori passati come argomento compatibile con la procedura di
+     allineamento (NOTA: è ovviamente necessario che le variabili da unire siano della stessa lunghezza vettoriale.)
+     Come nota tecnica, è semplicemente un alias di np.stack(*args, axis=-1)"""
+    
+Un ulteriore funzione nativa per il supporto di codifica vettoriale è la seguente
+    one_hot_encode(x, ordine)
+     """ Ritorna una feature vettoriale dove ogni elemento della feature è un vettore di lunghezza len(ordine)
+     contenente la codifica one-hot di ciascuna entry in x, e dove l'ordine della codifica è data dalla lista ordine"""
+     
+Un esempio dell'uso quest'ultima funzione sarà più chiaro della presentazione stessa.
+    
+    >> print(Meteo)
+    >> ["Nuvoloso", "Sole", "Pioggia, "Pioggia", "Nuvoloso"]
+    >> new OneHotEncodeMeteo = one_hot_encode(Meteo, ["Nuvoloso", "Sole", "Pioggia"]
+    >> print(OneHotEncodeMeteo)
+    >> [ [1, 0, 0], # Nuvoloso
+    [0, 1, 0], # Sole
+    [0, 0, 1], # Pioggia
+    [0, 0, 1], # Pioggia
+    [1, 0, 0] ] # Nuvoloso
+    
 
 Alcuni esempi renderanno più chiara la sintassi (macchinosa) presentata.
 Il seguente programma prende dal file DataFile i dati delle transizioni
@@ -378,7 +405,15 @@ La keyword `take` si presenta in variante del seguente schema generale:
     take <numero> after x from <Var>
     take x from VarSingola
 Mentre le prime due istruiscono semplicemente di non considerare la finestra anteriore (o posteriore), l'ultima variante segnala di non considerare nessuna finestra ma di prendere un singolo dato da `VarSingola` per riga di input al modello.
-  Il seguente snippet di codice allinea i parametri `RiverHeight` e `Meteo` considerando le date presenti nei rispettivi file di sorgente, in seguito richiede di inserire per ogni riga di input al modello 365 campioni del meteo prima di un determinato giorno 'x' e 7 campioni del meteo dopo il giorno 'x' (il giorno x è sempre incluso!). Per il parametro`RiverHeight`invece istruisce di considerare una finestra temporale di 7 giorni.
+E' importante osservare che nel caso di variabili vettoriali, la finestra viene presa sull'intero vettore di ciascun data point nella feature! Questo voldire che prendendo il seguente vettore dati di esempio
+
+    >> print(Esempio)
+    >> [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ]
+Le finestre di 'dimensione due' sui dati saranno 
+    >> [ [1, 0, 0, 0, 1, 0], [0, 1, 0, 0, 0, 1] ]!
+
+Sarà utile un esempio. Il seguente snippet di codice allinea i parametri `RiverHeight` e `Meteo` considerando le date presenti nei rispettivi file di sorgente, in seguito richiede di inserire per ogni riga di input al modello 365 campioni del meteo prima di un determinato giorno 'x' e 7 campioni del meteo dopo il giorno 'x' (il giorno x è sempre incluso!).
+Per il parametro`RiverHeight`invece istruisce di considerare una finestra temporale di 7 giorni.
   
 
     begin plan River expecting full_recovery
@@ -390,7 +425,7 @@ Mentre le prime due istruiscono semplicemente di non considerare la finestra ant
 		take 7 before x from Temperature
 		
     }
-Per terminare un piano è necessario indicare la variabile di target( per ora una, in futuro un numero arbitrario). E' possibile, anche per il target, specificare la finestra desiderata (che sarà quindi output del modello, un vettore) ma solo nel 'futuro' (per ora, non ha senso chiedere di predire qualcosa nel passato relativo a dati già in possesso).
+Per terminare un piano è necessario indicare la variabile di target( per ora è supportata una sola variabile di target, in futuro un numero arbitrario). E' possibile, anche per il target, specificare la finestra desiderata (che sarà quindi output del modello, un vettore) ma solo nel 'futuro' (per ora, non ha senso chiedere di predire qualcosa nel passato relativo a dati già in possesso).
 Per fare ciò si usa la keyword `make` in questo modo
 
     make <varname> the target and take y from <varname>
