@@ -239,7 +239,8 @@ Per raggruppare variabili distinte in una stessa feature vettoriale, è presente
      Come nota tecnica, è semplicemente un alias di np.stack(*args, axis=-1)"""
     
 Un ulteriore funzione nativa per il supporto di codifica vettoriale è la seguente
-    one_hot_encode(x, ordine)
+
+     one_hot_encode(x, ordine)
      """ Ritorna una feature vettoriale dove ogni elemento della feature è un vettore di lunghezza len(ordine)
      contenente la codifica one-hot di ciascuna entry in x, e dove l'ordine della codifica è data dalla lista ordine"""
      
