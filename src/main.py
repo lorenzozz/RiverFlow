@@ -14,7 +14,7 @@ if __name__ == '__main__':
     with np.load(make_file) as model:
         print(model['Gianfranco'][0])
         print(model['Gianfranco'].shape)
-        print(model['y'].shape)
+        print(model['y'][0])
         #numpy.savez(make_file+'k')
     #Make_File = DataFormatReader(make_file)
     # Make_File.interpret()

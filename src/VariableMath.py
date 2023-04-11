@@ -129,10 +129,20 @@ def vec_discrete(x, bins, val_map):
     return result
 
 
-def vec_one_hot(x):
-    a = set(x)
-    r = np.stack(axis=-1)
-    NotImplemented
+def vec_one_hot(x, ordering):
+    """
+     Returns a vector encoding the target categorical variable x
+    according to the ordering passed as parameter
+    :param ordering: the ordering of the encoding
+    :param x: the target vector
+    :returns: one hot encoding
+    """
+    # Needs ordering, cast to list
+    ordering = np.array(ordering).astype(str)
+    o_hot = np.zeros((len(ordering), np.size(x)))
+    for label, target in zip(ordering, o_hot):
+        target[x == label] = 1.0
+    return o_hot.T
 
 
 def vec_stack(*args):

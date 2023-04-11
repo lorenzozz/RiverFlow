@@ -93,7 +93,7 @@ class VariableVectorManager:
              "intervallo": vec_interval,
              "lunghezza": np.size,
              "tronca": vec_truncate,
-             "one_hot": vec_one_hot,
+             "one_hot_encode": vec_one_hot,
              "stack": vec_stack,
              "gaussiana": "gaussiana",  # Label
              "esponenziale": "esponenziale",  # Label
