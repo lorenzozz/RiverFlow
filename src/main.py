@@ -1,6 +1,7 @@
 import numpy
 import numpy as np
 import tensorflow as tf
+from Config import *
 
 from DataOrganizer import DataFormatReader
 
@@ -10,7 +11,7 @@ __dependencies__ = ['numpy 1.20', 'tensorflow .', 'matplotlib .']
 
 if __name__ == '__main__':
 
-    make_file = "C:/Users/picul/OneDrive/Documenti/RiverData/Test.npz"
+    make_file = URLROOT +r"/RiverData/Test.npz"
     with np.load(make_file) as model:
         print(model['Gianfranco'][0])
         print(model['Gianfranco'].shape)

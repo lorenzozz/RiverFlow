@@ -1,7 +1,10 @@
 import csv  # CSV data from River
 import math  # Supported package
+import os
+
 from matplotlib import pyplot as plt
 
+from Config import *
 from Errors import *  # Errors
 from VariableVectorAlgebra import *  # Vectorial algebra
 from DatasetPlanner import *  # Make plans
@@ -479,8 +482,8 @@ class DataFormatReader:
 
 if __name__ == '__main__':
 
-    Parse_data = 'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
-    Parse_datat = 'C:/Users/picul/OneDrive/Documenti/RiverData/NewIrisScript.txt'
+    Parse_data =  'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
+    Parse_datat = URLROOT + r'\RiverData\NewIrisScript.txt'
 
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
