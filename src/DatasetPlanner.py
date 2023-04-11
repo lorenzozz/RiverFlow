@@ -167,7 +167,7 @@ class Aligner:
             # Var is a 1-d numpy vector (var.ndim==1)
             conv_data = np.lib.stride_tricks.sliding_window_view(trimmed_data, slider)
         else:
-            # Each element of var is an iterable. Currently support just one-dimensional data
+            # Each element of var is an iterable. Currently supports just one-dimensional data
             # (In the future, it may support tensor maps)
             e_size = np.size(var[0])
 
