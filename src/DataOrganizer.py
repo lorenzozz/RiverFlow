@@ -421,7 +421,7 @@ class DataFormatReader:
                 log_file = statement.split('into')[1].strip()
                 plan_registered[plan_label].log(log_save_files[log_file])
 
-            elif 'set' in statement:
+            elif 'set ' in statement:
                 set_value = statement.split('\"')[1].strip()
                 model_name = next(i for i in statement.split(' ') if i in plan_registered.keys())
                 field_name = statement.split(model_name)[1].split('=')[0].strip()
@@ -483,11 +483,12 @@ class DataFormatReader:
 if __name__ == '__main__':
 
     Parse_data =  'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
-    Parse_datat = URLROOT + r'\RiverData\NewIrisScript.txt'
+    # Parse_datat = URLROOT + r'\RiverData\NewIrisScript.txt'
 
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
+    Parse_datat = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/breast_cancer_treat_data.makefile"
     dataFormat = DataFormatReader(Parse_datat)
     dataFormat.interpret()
