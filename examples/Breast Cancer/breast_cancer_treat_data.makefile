@@ -34,7 +34,7 @@ new OHotTruth = one_hot_encode(Truth, ["2", "4"])
 print(OHotTruth)
 
 new Indexes = np.arange(0, np.size(Thickness))
-
+new A = tf.range(0,12)
 .sap
 .make
 

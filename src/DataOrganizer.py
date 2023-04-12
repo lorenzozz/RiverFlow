@@ -482,13 +482,12 @@ class DataFormatReader:
 
 if __name__ == '__main__':
 
-    Parse_data =  'C:/Users/picul/OneDrive/Documenti/past-riverdata.txt'
-    # Parse_datat = URLROOT + r'\RiverData\NewIrisScript.txt'
+    Parse_data = URLROOT + r'\RiverData\NewIrisScript.txt'
 
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
-    Parse_datat = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/breast_cancer_treat_data.makefile"
-    dataFormat = DataFormatReader(Parse_datat)
+    Parse_data = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/breast_cancer_treat_data.makefile"
+    dataFormat = DataFormatReader(Parse_data)
     dataFormat.interpret()

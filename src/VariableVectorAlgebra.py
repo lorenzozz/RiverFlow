@@ -1,7 +1,6 @@
 from MathErrors import *
 from VariableMath import *
-
-import numpy as np
+from difflib import get_close_matches  # Neat error descriptions
 
 
 class VariableVectorManager:
@@ -14,7 +13,7 @@ class VariableVectorManager:
         self.variables_dims: dict = {}
 
         self.error_issuer = issue_error
-        self.grammar = None
+        self.env = None
 
     def add_variable(self, var_name, py_data, as_type):
         try:
@@ -22,44 +21,74 @@ class VariableVectorManager:
         # Solve missing datapoint by just putting them equal to zero.
         except ValueError:
             intermediate = np.array(py_data)
+            # Naive attempt to counter missing data, should be more modular
+            # in this sense.
             intermediate[intermediate == ''] = '0'
 
             self.variables[var_name] = intermediate.astype(as_type)
 
         self.variables_dims[var_name] = np.size(self.variables[var_name])
-        if self.grammar:
-            self.grammar[var_name] = self.variables[var_name]
+        if self.env:
+            self.env[var_name] = self.variables[var_name]
 
     def add_copy_of(self, variable_to_copy, new_label):
         # Performs a deep copy of variable <variable_to_copy> and adds
         # a new variable under label new_label
         self.variables[variable_to_copy] = np.ndarray.copy(self.variables[new_label])
         self.variables_dims[variable_to_copy] = np.size(self.variables[new_label])
-        if self.grammar:
-            self.grammar[variable_to_copy] = self.variables[variable_to_copy]
+        if self.env:
+            self.env[variable_to_copy] = self.variables[variable_to_copy]
 
     def execute_line(self, statement, line_number):
+        print(statement)
         # First parse statement into lh-side, rh-side
         if '=' not in statement and 'print(' not in statement:
-            self.error_issuer(NotAssignmentExpression, f"At line {line_number}: Attempting" +
-                              " to execute a non-assignment expression is an error as" +
-                              "every variable is treated by value, not reference")
+            self.error_issuer(NotAssignmentExpression, f"Missing '=' at line {line_number}: " +
+                              f"Attempting to execute a non-assignment expression is an " +
+                              f"error as every variable is taken by value, not reference")
         try:
             if 'print(' in statement:
-                print("* ", eval(statement.split('print(')[1].split(')')[0].strip(), self.grammar))
+                print("* ", eval(statement.split('print(')[1].split(')')[0].strip(), self.env))
             else:
                 ref_var = statement.split('=', 1)[0].strip()
                 action = statement.split('=', 1)[1].strip()
-                self.variables[ref_var] = eval(action, self.grammar)
+
+                # Enforce 'new' syntax.
+                if ref_var not in self.env.keys():
+                    raise NameError(ref_var)
+
+                self.variables[ref_var] = eval(action, self.env)
                 self.variables_dims[ref_var] = np.size(self.variables[ref_var])
-                self.grammar[ref_var] = self.variables[ref_var]
+                self.env[ref_var] = self.variables[ref_var]
 
         except Exception as BroadException:
-            raise GenericMathError(f"A math error occured during the execution of statement \"{statement} \""
-                                   f". Description of the error: {BroadException.__str__()}")
+            # Attempt to give user a reasonable description of the occurred error
+            err_expl = self.get_useful_error_description(BroadException, statement)
+            raise GenericMathError(err_expl)
 
     def get_useful_error_description(self, exception, statement):
-        NotImplemented
+        """
+        Provides the user with a useful error description from the exception
+        that occurred inside the .act section, as specified from the error mode
+        (last part not implemented yet)
+
+        :param exception: exception to clarify
+        :param statement: statement where exception occurred
+        :return: a useful description of the error or the original exception
+         __str()__ if the program cannot find a feasible explanation for the error
+        """
+
+        # Unrecognized name referenced
+        if isinstance(exception, NameError):
+            possible_matches = get_close_matches(exception.__str__(), list(self.env.keys()))
+            error_expl = f"Name <{exception.__str__()}> in statement \"{statement.strip()}\" not recognized. " + \
+                         (f"Did you mean one of the following? {possible_matches}" if possible_matches
+                          else "")
+
+        else:
+            return exception.__str__()
+
+        return error_expl
 
     def get_variable(self, variable_name):
         return self.variables[variable_name]
@@ -77,7 +106,7 @@ class VariableVectorManager:
     def load_grammar_mapper(self):
 
         # Predefined function aliases.
-        self.grammar = {
+        self.env = {
             "discretizza": vec_discrete,
             "aggiungi_rumore": vec_add_noise,
             "da_categorico_a_numero": vec_bool_to_num,
@@ -97,7 +126,7 @@ class VariableVectorManager:
             "esponenziale": "esponenziale",  # Label
             "uniforme": "uniforme",  # Label
         }
-        self.grammar.update(self.variables)
+        self.env.update(self.variables)
 
     @staticmethod
     def take_type(var_type):
@@ -111,7 +140,7 @@ class VariableVectorManager:
 
     def add_package(self, package, pack):
         # Add passed package to grammar
-        self.grammar[package] = pack
+        self.env[package] = pack
 
     def get_sizeof_var(self, variable):
         return self.variables_dims[variable]

@@ -1,0 +1,18 @@
+> Changing field error to attempt_recovery
+> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Test', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Training']
+> Changing field proportions to [30, 70]
+> Generated 695 data points from input configuration
+> Non target variables:['Thickness', 'CSize', 'CShape', 'MAdh', 'SECS', 'BNuclei', 'BChrom', 'NorNucleoli', 'Mitoses'], Target variables: OHotTruth
+> Successfully compiled the plan as a list of (x,y) pairs with labels "x" e "y" split with  percentages [30, 70]
+
+> DATA FED INTO THE MODEL:
+
+> | Thickness | CSize | CShape | MAdh | SECS | BNuclei | BChrom | NorNucleoli | Mitoses 
+> | X         | X     | X      | X    | X    | X       | X      | X           | X       
+> <-^^->      <-^^->  <-^^->   <-^^-> <-^^-> <-^^->    <-^^->   <-^^->        <-^^->    
+
+> EXPECTED OUTPUT OF THE MODEL:
+
+> | OHotTruth 
+> | Y         
+> <-^^->      
