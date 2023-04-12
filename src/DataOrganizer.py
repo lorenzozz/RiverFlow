@@ -8,9 +8,26 @@ from Errors import *  # Errors
 from VariableVectorAlgebra import *  # Vectorial algebra
 from DatasetPlanner import *  # Make plans
 
+
 class FileDeclGetter:
-    glob_env = Config.__dic__
-    def __init__(self):
+    # Static env
+    glob_env = Config.__dict__
+
+    @staticmethod
+    def get_name_and_path(statement: str, file_tok: str):
+
+        if file_tok not in statement:
+            raise BadFormatStyle("", "Missing source_file token at line " + statement)
+
+        path_statement = statement.split('=')[1].strip()
+        file_path = eval(path_statement, FileDeclGetter.glob_env)
+        if not isinstance(file_path, str):
+            raise IncorrectFilePathExpr(file_path)
+
+        file_label = statement.split(file_tok, 1)[1].split('=')[0].strip(' ')
+
+        return file_label, file_path
+
 
 class DataFormatReader:
     def __init__(self, format_path):
@@ -70,28 +87,12 @@ class DataFormatReader:
                 source_line = str(self.rows.index(file_token))
                 arg_list = arg_list.strip('\n')
 
-                # Rule out malformed expressions
-                if 'source_file' not in file_token:
-                    raise BadFormatStyle(self.format_path, "Missing source_file token at line " +
-                                         source_line)
-
-                if file_token.count('\"') != 2:
-                    raise MismatchedToken(self.format_path, "Incoherent use of token '=' "
-                                                            "or use of illegal character \"")
-
-                path_statement = file_token.split('=')[1].strip()
-                file_path = eval(path_statement, globals)
-                if not isinstance(file_path, str):
-                    raise IncorrectFilePathExpr(file_path)
-
-                file_label = file_token.split('source_file', 1)[1].split('=')[0].strip(' ')
-                if not file_label or file_label == '':
-                    raise BadFormatStyle(self.format_path, f"File label required for source_file {file_path}"
-                                                           " at line " + source_line)
+                file_label, file_path = FileDeclGetter.get_name_and_path(file_token, 'source_file')
 
                 # Add filepath file dictionary
                 self.input_files[file_label] = file_path
 
+                # Check for trivial error in format string
                 if arg_list.count('{') != arg_list.count('}'):
                     raise MismatchedToken(self.format_path, "Mismatched '{' parenthesis in declaration "
                                                             "of variables at line " + source_line)
@@ -105,11 +106,12 @@ class DataFormatReader:
                 self.formats[file_label] = split_arg_list[::2]
                 self.files_arglists[file_label] = variable_names
 
+                # No variable can be redeclared.
                 if any(i in self.variables for i in variable_names):
                     raise BadFormatStyle(self.format_path, f"Label already defined was redeclared"
                                                            " at line " + source_line)
 
-                self.variables.update({name: None for name in variable_names})
+                self.variables.update({name: "Not yet defined" for name in variable_names})
 
         else:
             raise MissingSection(self.format_path, "Incorrect separation of declaration" +
@@ -298,13 +300,15 @@ class DataFormatReader:
             line = line.split('#')[0] if '#' in line else line
 
             if 'save_file' in line:
+                file_name, file_path = FileDeclGetter.get_name_and_path(line, 'save_file')
+
                 if '=' in line:
                     file_name = line.split('save_file')[1].split('=')[0].strip()
                 else:
                     raise BadSaveFile(None, "Incorrect declaration of save file, missing '=' "
                                             "token at line " + line_number)
 
-                save_files[file_name] = line.split('\"')[1].strip()
+                save_files[file_name] = file_path
             elif 'save ' in line:
                 # Save requested variables with indicate format. a ';' signals csv
                 # to separate into different columns, the rest of the characters are taken
@@ -373,13 +377,12 @@ class DataFormatReader:
             # House-keeping file management commands
             elif '_file ' in statement:
 
-                file_path = eval(statement.split('=')[1].strip(), globs)
                 if 'plan' in statement:
-                    file_label = statement.split('plan_file ')[1].split('=')[0].strip()
+                    file_label, file_path = FileDeclGetter.get_name_and_path(statement, 'plan_file')
                     plan_save_files[file_label] = file_path
                 elif 'log' in statement:
-                    log_label = statement.split('log_file ')[1].split('=')[0].strip()
-                    log_save_files[log_label] = file_path
+                    file_label, file_path = FileDeclGetter.get_name_and_path(statement, 'log_file')
+                    log_save_files[file_label] = file_path
 
             elif 'split' in statement:
 
@@ -462,14 +465,13 @@ class DataFormatReader:
         self.create_data()
 
         self.parse_part_one()  # .decl
-        self.parse_part_two()   # .res
-        self.act()    # .act
-        self.parse_sap()   # .sap
+        self.parse_part_two()  # .res
+        self.act()  # .act
+        self.parse_sap()  # .sap
         self.parse_make()  # .make
 
 
 if __name__ == '__main__':
-
     Parse_data = Config.URLROOT + r'\RiverData\NewIrisScript.txt'
 
     # Debug data, not present in production

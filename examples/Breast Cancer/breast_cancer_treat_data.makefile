@@ -1,6 +1,7 @@
 .decl
 source_file CancerData = EXAMPLESROOT + "/Breast Cancer/Breast-cancer-dataset/shuffled-cancer-dataset.data"
 {Number},{Thickness},{CSize},{CShape},{MAdh},{SECS},{BNuclei},{BChrom},{NorNucleoli},{Mitoses},{Truth}
+
 .res
 Number: categorical
 Thickness: numeric

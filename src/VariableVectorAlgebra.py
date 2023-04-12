@@ -135,7 +135,7 @@ class VariableVectorManager:
                     "numeric": np.float64,
                     "integer": np.int32}[var_type]
         except KeyError:
-            raise VariableTypeUnspecified(f"Variable {var_type} has no specified type.")
+            raise VariableTypeUnspecified(f"A variable was not specified.")
 
     def add_package(self, package, pack):
         # Add passed package to grammar

@@ -1,5 +1,5 @@
 > Changing field error to attempt_recovery
-> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Test', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Training']
+> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/src/../examples/Breast Cancer/Breast-cancer-dataset/Test', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/src/../examples/Breast Cancer/Breast-cancer-dataset/Training']
 > Changing field proportions to [30, 70]
 > Generated 693 data points from input configuration
 > Non target variables:['Thickness', 'CSize', 'CShape', 'MAdh', 'SECS', 'BNuclei', 'BChrom', 'NorNucleoli', 'Mitoses'], Target variables: OHotTruth

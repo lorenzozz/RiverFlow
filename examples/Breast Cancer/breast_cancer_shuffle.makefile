@@ -3,15 +3,15 @@
 
 .decl
 # Import each original IrisData data row as a whole
-source_file IrisData = EXAMPLESROOT + "\Breast Cancer\Breast-cancer-dataset\breast-cancer-wisconsin.data"
-{IrisData}
+source_file CancerDataset = EXAMPLESROOT + "\Breast Cancer\Breast-cancer-dataset\breast-cancer-wisconsin.data"
+{CancerData}
 
 .res
 # Instruct the interpreter that IrisData[i] is a string
-IrisData: categorical
+CancerData: categorical
 
 .act
-new ShuffledData = shuffle(IrisData)
+new ShuffledData = shuffle(CancerData)
 
 .sap
 save_file SaveShuffled = EXAMPLESROOT + "\Breast Cancer\shuffled-cancer-dataset"
