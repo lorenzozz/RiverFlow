@@ -1,5 +1,5 @@
 .decl
-source_file CancerData = EXAMPLESROOT + "/examples/Breast Cancer/Breast-cancer-dataset/shuffled-cancer-dataset.data"
+source_file CancerData = EXAMPLESROOT + "/Breast Cancer/Breast-cancer-dataset/shuffled-cancer-dataset.data"
 {Number},{Thickness},{CSize},{CShape},{MAdh},{SECS},{BNuclei},{BChrom},{NorNucleoli},{Mitoses},{Truth}
 .res
 Number: categorical
@@ -29,14 +29,14 @@ BNuclei = BNuclei - media(BNuclei)
 BChrom = BChrom- media(BChrom)
 NorNucleoli = NorNucleoli- media(NorNucleoli)
 Mitoses = Mitoses - media(Mitoses)
-
+new Indexes = np.arange(0, np.size(Thickness))
 new OHotTruth = one_hot_encode(Truth, ["2", "4"])
 print(OHotTruth)
 
 .sap
 .make
 
-log_file LogFile = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/log.txt"
+log_file LogFile = EXAMPLESROOT + "/Breast Cancer/Breast-cancer-dataset/log.txt"
 plan_file Test = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Test"
 plan_file Training = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Training"
 
@@ -51,7 +51,7 @@ begin plan CancerPred expecting attempt_recovery
     take x from CSize
     take x from CShape
     take x from MAdh
-    take x from SECS
+    take 2 before x from SECS
     take x from BNuclei
     take x from BChrom
     take x from NorNucleoli

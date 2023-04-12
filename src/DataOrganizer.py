@@ -8,29 +8,9 @@ from Errors import *  # Errors
 from VariableVectorAlgebra import *  # Vectorial algebra
 from DatasetPlanner import *  # Make plans
 
-
-class DataOrganizer:
-    def __init__(self, data_path):
-        self.data_path = data_path
-        self.data = None
-        self.extracted_data = None
-
-    def open_data(self):
-        try:
-            csv_file = open(self.data_path)
-            self.data = csv.reader(csv_file, dialect='excel')
-        except Exception:
-            raise IncorrectDataFile(self.data_path)
-
-    def extract_data(self):
-        self.extracted_data = [row for row in self.data]
-
-    def print_data(self):
-        print(self.data)
-
-    def print_extracted_data(self):
-        print(self.extracted_data)
-
+class FileDeclGetter:
+    glob_env = Config.__dic__
+    def __init__(self):
 
 class DataFormatReader:
     def __init__(self, format_path):
@@ -374,6 +354,8 @@ class DataFormatReader:
         plan_save_files = {"None": None}
         log_save_files = {}
 
+        globs = Config.__dict__
+
         while current_row < len(self.rows):
             statement = self.rows[current_row]
             if 'begin plan' in statement:
@@ -391,13 +373,14 @@ class DataFormatReader:
             # House-keeping file management commands
             elif '_file ' in statement:
 
-                file_path = statement.split('\"')[1].strip()
+                file_path = eval(statement.split('=')[1].strip(), globs)
                 if 'plan' in statement:
                     file_label = statement.split('plan_file ')[1].split('=')[0].strip()
                     plan_save_files[file_label] = file_path
                 elif 'log' in statement:
                     log_label = statement.split('log_file ')[1].split('=')[0].strip()
                     log_save_files[log_label] = file_path
+
             elif 'split' in statement:
 
                 model_name = statement.split('split')[1].split('into')[0].strip()
