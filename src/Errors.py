@@ -18,8 +18,7 @@ class IncorrectLogFile(Exception):
 
     def __str__(self) -> str:
         self.TimeOccurred = datetime.now()
-        return "IncorrectLogFile Error from Input: <" + \
-            str(self.ErrorPath) + \
+        return "IncorrectLogFile Error from Input: <" + str(self.ErrorPath) + \
             " > at " + str(self.TimeOccurred)
 
 
@@ -28,7 +27,7 @@ class IncorrectDataFile(Exception):
         self.ErrorPath = path
 
     def __str__(self) -> str:
-        self.TimeOccurred = datetime.now.time()
+        self.TimeOccurred = datetime.now()
         return "IncorrectDataFile Error from Input: <" + \
             str(self.ErrorPath) + \
             " > at " + str(self.TimeOccurred)
@@ -39,9 +38,8 @@ class IncorrectFormatFile(Exception):
         self.ErrorPath = path
 
     def __str__(self) -> str:
-        self.TimeOccurred = datetime.now.time()
-        return "IncorrectFormatFile Error from Input: <" + \
-            str(self.ErrorPath) + \
+        self.TimeOccurred = datetime.now()
+        return "IncorrectFormatFile Error from Input: <" + str(self.ErrorPath) + \
             " > at " + str(self.TimeOccurred)
 
 
@@ -53,9 +51,8 @@ class BadFormatStyle(Exception):
 
     def __str__(self) -> str:
         self.TimeOccurred = datetime.now()
-        return "IncorrectFormatFile Error from Input: <" + \
-            str(self.ErrorPath) + \
-            " > at " + str(self.TimeOccurred) + "\n" + str(self.ErrorSpecific)
+        return "IncorrectFormatFile Error from Input: <" + str(self.ErrorPath) + \
+            " > at " + str(self.TimeOccurred) + ":\n" + str(self.ErrorSpecific)
 
 
 # Descriptive alias for specific mismatched parenthesis error

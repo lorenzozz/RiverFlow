@@ -40,7 +40,6 @@ class VariableVectorManager:
             self.env[variable_to_copy] = self.variables[variable_to_copy]
 
     def execute_line(self, statement, line_number):
-        print(statement)
         # First parse statement into lh-side, rh-side
         if '=' not in statement and 'print(' not in statement:
             self.error_issuer(NotAssignmentExpression, f"Missing '=' at line {line_number}: " +

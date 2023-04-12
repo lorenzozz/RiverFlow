@@ -1,5 +1,5 @@
 .decl
-source_file CancerData = URLROOT + "/../examples/Breast Cancer/Breast-cancer-dataset/shuffled-cancer-dataset.data"
+source_file CancerData = EXAMPLESROOT + "/examples/Breast Cancer/Breast-cancer-dataset/shuffled-cancer-dataset.data"
 {Number},{Thickness},{CSize},{CShape},{MAdh},{SECS},{BNuclei},{BChrom},{NorNucleoli},{Mitoses},{Truth}
 .res
 Number: categorical
@@ -33,8 +33,6 @@ Mitoses = Mitoses - media(Mitoses)
 new OHotTruth = one_hot_encode(Truth, ["2", "4"])
 print(OHotTruth)
 
-new Indexes = np.arange(0, np.size(Thickness))
-new A = tf.range(0,12)
 .sap
 .make
 

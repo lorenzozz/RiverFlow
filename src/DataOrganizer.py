@@ -98,7 +98,6 @@ class DataFormatReader:
                 if file_token.count('\"') != 2:
                     raise MismatchedToken(self.format_path, "Incoherent use of token '=' "
                                                             "or use of illegal character \"")
-                print(globals)
 
                 path_statement = file_token.split('=')[1].strip()
                 file_path = eval(path_statement, globals)
