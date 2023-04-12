@@ -392,6 +392,7 @@ Richiedendo che per predirre un dato futuro si usino, ad esempio, una finestra t
 Più concretamente, avendo a disposizione 10 dati e dovendo per ogni output fornire i dati della settimana(5 giorni) precedenti, il numero di data point effettivi è pari a 10 - 5 + 1 = 6 come mostrato in figura
 
 ![enter image description here](https://static.wixstatic.com/media/e54f51_5955f825854e41e0a179fc07b5b5fff9~mv2.jpg/v1/fill/w_640,h_384,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/e54f51_5955f825854e41e0a179fc07b5b5fff9~mv2.jpg)
+
 Affinchè abbia senso tenere una finestra che scorre lungo dei dati di origine diversa, è necessario che vengano prima allineati (ad esempio, rispetto ad una data). Questo è lo scopo delle direttive di `align`
 
 Per richiedere un modo di disporre un parametro, si usa la keyword `take`. Prima di poter usare la keyword di`take` è necessario aver prima dichiarato la fine della sezione di allineamento con `consider x`.

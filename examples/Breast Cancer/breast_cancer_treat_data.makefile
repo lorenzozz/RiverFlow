@@ -37,8 +37,8 @@ print(OHotTruth)
 .make
 
 log_file LogFile = EXAMPLESROOT + "/Breast Cancer/Breast-cancer-dataset/log.txt"
-plan_file Test = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Test"
-plan_file Training = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/Breast-cancer-dataset/Training"
+plan_file Test = EXAMPLESROOT + "/Breast Cancer/Breast-cancer-dataset/Test"
+plan_file Training = EXAMPLESROOT + "/Breast Cancer/Breast-cancer-dataset/Training"
 
 begin plan CancerPred expecting attempt_recovery
 {

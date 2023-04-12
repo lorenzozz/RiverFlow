@@ -15,3 +15,4 @@ Monitoraggio eco-aware plant-based green-compatible bio-diverse di risorse idric
  - Creazione di descrizione delle variabili in input e output del modello nel file di log
  - Direttiva di split per supportare le divisioni di dati in training, test e validazione
  - Funzioni native aggiunte in fase di .act: stack(a,b,...n), one_hot_encode(categorical_var, ordine) per il supporto di feature vettoriali
+ - Aggiunta possibilità di valutare espressioni dentro la dichiarazione di un path in .decl

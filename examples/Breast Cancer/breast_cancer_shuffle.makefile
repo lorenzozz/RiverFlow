@@ -3,7 +3,7 @@
 
 .decl
 # Import each original IrisData data row as a whole
-source_file IrisData = "C:\Users\picul\PycharmProjects\pythonProject\RiverFlow\examples\Breast Cancer\Breast-cancer-dataset\breast-cancer-wisconsin.data"
+source_file IrisData = EXAMPLESROOT + "\Breast Cancer\Breast-cancer-dataset\breast-cancer-wisconsin.data"
 {IrisData}
 
 .res
@@ -14,7 +14,7 @@ IrisData: categorical
 new ShuffledData = shuffle(IrisData)
 
 .sap
-save_file SaveShuffled = "C:\Users\picul\PycharmProjects\pythonProject\RiverFlow\examples\Breast Cancer\shuffled-cancer-dataset"
+save_file SaveShuffled = EXAMPLESROOT + "\Breast Cancer\shuffled-cancer-dataset"
 save "{ShuffledData}" into SaveShuffled
 
 .make
