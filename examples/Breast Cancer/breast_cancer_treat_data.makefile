@@ -1,5 +1,5 @@
 .decl
-source_file CancerData = "C:\Users\picul\PycharmProjects\pythonProject\RiverFlow\examples\Breast Cancer\Breast-cancer-dataset\shuffled-cancer-dataset.data"
+source_file CancerData = URLROOT + "/../examples/Breast Cancer/Breast-cancer-dataset/shuffled-cancer-dataset.data"
 {Number},{Thickness},{CSize},{CShape},{MAdh},{SECS},{BNuclei},{BChrom},{NorNucleoli},{Mitoses},{Truth}
 .res
 Number: categorical

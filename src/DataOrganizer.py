@@ -1,10 +1,9 @@
 import csv  # CSV data from River
 import math  # Supported package
-import os
+import Config
 
 from matplotlib import pyplot as plt
 
-from Config import *
 from Errors import *  # Errors
 from VariableVectorAlgebra import *  # Vectorial algebra
 from DatasetPlanner import *  # Make plans
@@ -77,6 +76,8 @@ class DataFormatReader:
         # Part 2, we can find the index of the empty element '\n' inside self.rows
         # to find where the declaration section ends
 
+        globals = Config.__dict__
+
         if '.decl\n' in self.rows:
             decl_section = [r for r in self.rows[1:self.rows.index('.res\n')] if r != '\n']
             if len(decl_section) % 2 != 0:
@@ -97,8 +98,13 @@ class DataFormatReader:
                 if file_token.count('\"') != 2:
                     raise MismatchedToken(self.format_path, "Incoherent use of token '=' "
                                                             "or use of illegal character \"")
+                print(globals)
 
-                file_path = file_token.split('\"')[1].strip()
+                path_statement = file_token.split('=')[1].strip()
+                file_path = eval(path_statement, globals)
+                if not isinstance(file_path, str):
+                    raise IncorrectFilePathExpr(file_path)
+
                 file_label = file_token.split('source_file', 1)[1].split('=')[0].strip(' ')
                 if not file_label or file_label == '':
                     raise BadFormatStyle(self.format_path, f"File label required for source_file {file_path}"
@@ -482,7 +488,7 @@ class DataFormatReader:
 
 if __name__ == '__main__':
 
-    Parse_data = URLROOT + r'\RiverData\NewIrisScript.txt'
+    Parse_data = Config.URLROOT + r'\RiverData\NewIrisScript.txt'
 
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'

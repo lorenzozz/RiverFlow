@@ -1,4 +1,14 @@
-from datetime import datetime   # datetime.now
+from datetime import datetime  # datetime.now
+
+
+class IncorrectFilePathExpr(Exception):
+    def __init__(self, path):
+        self.ErrorPath = path
+
+    def __str__(self) -> str:
+        self.TimeOccurred = datetime.now()
+        return f"Incorrect file path expression \"{self.ErrorPath}: \"" + \
+            "result of expression was not a string."
 
 
 class IncorrectLogFile(Exception):
@@ -80,4 +90,3 @@ class IncompatibleVecSizes(BadFormatStyle):
 
     def __str__(self):
         return super().__str__()
-
