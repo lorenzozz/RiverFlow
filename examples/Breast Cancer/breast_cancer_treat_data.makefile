@@ -52,7 +52,7 @@ begin plan CancerPred expecting attempt_recovery
     take x from CSize
     take x from CShape
     take x from MAdh
-    take 2 before x from SECS
+    take 4 before x from SECS
     take x from BNuclei
     take x from BChrom
     take x from NorNucleoli

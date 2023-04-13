@@ -1,16 +1,18 @@
 import shutil
 from typing import Tuple
-import PIL.Image
 
 import Config
 import requests
 from PIL import Image
 
-# NASA ""api""
+"""
+Support module to request satellite data from the NASA sat-data API
+"""
 
 REQ_TIME = '2023-03-24T00:00:00'
 SAT_REQ_URL = 'https://gibs-c.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?'
-SAT_TILE_INFO = 'Z&layer=IMERG_Precipitation_Rate&style=default&tilematrixset=2km&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fpng&TileMatrix=2&TileCol=2&TileRow=0'
+SAT_TILE_INFO = 'Z&layer=IMERG_Precipitation_Rate&style=default&tilematrixset=2km&Service=WMTS&Request=GetTile' \
+                '&Version=1.0.0&Format=image%2Fpng&TileMatrix=2&TileCol=2&TileRow=0'
 
 
 def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[int, int], verbose=False):
@@ -24,7 +26,8 @@ def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[
     """
 
     # Complete range
-    complete_range = lambda tup: range(tup[0], tup[1] + 1)
+    def complete_range(tup):
+        return range(tup[0], tup[1] + 1)
 
     for year in complete_range(years):
         for month in complete_range(months):
@@ -44,9 +47,9 @@ def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[
                 del response
 
                 # Overwrite precedent incomplete image
-                b = PIL.Image.open(gen_path).convert('RGBA')
+                b = Image.open(gen_path).convert('RGBA')
                 l = Config.RIVERDATAROOT + '/eu-landscape.png'
-                c = PIL.Image.open(l).convert('RGBA')
+                c = Image.open(l).convert('RGBA')
 
                 # Merge geographic info and precipitation landscape together
                 b.alpha_composite(c)

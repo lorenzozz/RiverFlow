@@ -120,22 +120,23 @@ class DataFormatReader:
         opened_files = {}
         for variable in self.variables:
 
-            owner_file = next((label for label in self.input_files.keys()
+            owner = next((label for label in self.input_files.keys()
                                if variable in self.files_arglists[label]), None)
 
-            if not owner_file:
+            if not owner:
                 raise BadFormatStyle(self.format_path, f"Variable {variable} has no" +
                                      f" associated source file redeclared at line ")
 
-            if owner_file not in opened_files.keys():
-                opened_files[owner_file] = self.parse_file(owner_file)
+            if owner not in opened_files.keys():
+                opened_files[owner] = self.parse_file(self.input_files[owner], self.formats[owner])
 
-            var_col_i = self.files_arglists[owner_file].index(variable)
+            var_col_i = self.files_arglists[owner].index(variable)
 
             # Pass new variable onto vector mathematics manager
-            file_data = opened_files[owner_file]
+            file_data = opened_files[owner]
             # Categorical and Boolean variables are not converted to float autonomously.
             as_type = self.var_vector.take_type(self.variables[variable])
+
             self.var_vector.add_variable(variable, [
                 row[var_col_i] for row in file_data
             ], as_type)
@@ -442,15 +443,16 @@ class DataFormatReader:
             data.append(line)
         return data
 
-    def parse_file(self, label):
+    @staticmethod
+    def parse_file(inp_file: str, format_str: str):
 
-        with open(self.input_files[label], "r") as csv_file:
+        with open(inp_file, "r") as csv_file:
             lines = csv.reader(csv_file, dialect='excel', delimiter=';')
 
             if csv.Sniffer().has_header(csv_file.readline()):
                 lines.__next__()  # Glance over first\ line
 
-            data = [self.parse_csv_line(self.formats[label], ';'.join(line)) for line in lines
+            data = [DataFormatReader.parse_csv_line(format_str, ';'.join(line)) for line in lines
                     if not str.isspace(';'.join(line)) and line]
 
         return data
