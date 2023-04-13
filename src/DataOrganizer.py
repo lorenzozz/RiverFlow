@@ -73,8 +73,6 @@ class DataFormatReader:
         # Part 2, we can find the index of the empty element '\n' inside self.rows
         # to find where the declaration section ends
 
-        globals = Config.__dict__
-
         if '.decl\n' in self.rows:
             decl_section = [r for r in self.rows[1:self.rows.index('.res\n')] if r != '\n']
             if len(decl_section) % 2 != 0:
@@ -358,8 +356,6 @@ class DataFormatReader:
         plan_save_files = {"None": None}
         log_save_files = {}
 
-        globs = Config.__dict__
-
         while current_row < len(self.rows):
             statement = self.rows[current_row]
             if 'begin plan' in statement:
@@ -374,12 +370,14 @@ class DataFormatReader:
                 plan_registered[plan_name] = DatasetPlanner(self.rows[current_row:], self.var_vector, plan_name)
                 plan_registered[plan_name].parse()
                 current_row = next(i for i in range(current_row, len(self.rows)) if 'end plan' in self.rows[i])
+
             # House-keeping file management commands
             elif '_file ' in statement:
 
                 if 'plan' in statement:
                     file_label, file_path = FileDeclGetter.get_name_and_path(statement, 'plan_file')
                     plan_save_files[file_label] = file_path
+
                 elif 'log' in statement:
                     file_label, file_path = FileDeclGetter.get_name_and_path(statement, 'log_file')
                     log_save_files[file_label] = file_path
