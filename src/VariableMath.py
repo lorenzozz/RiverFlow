@@ -77,7 +77,7 @@ def vec_std(x):
     :param x: variable
     :return: variable's standard deviation
     """
-    return np.mean(x)
+    return np.std(x)
 
 
 def vec_add_noise(x, distribution, *args):

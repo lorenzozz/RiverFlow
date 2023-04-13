@@ -121,11 +121,11 @@ class DataFormatReader:
         for variable in self.variables:
 
             owner = next((label for label in self.input_files.keys()
-                               if variable in self.files_arglists[label]), None)
+                          if variable in self.files_arglists[label]), None)
 
             if not owner:
                 raise BadFormatStyle(self.format_path, f"Variable {variable} has no" +
-                                     f" associated source file redeclared at line ")
+                                     f" associated source file.")
 
             if owner not in opened_files.keys():
                 opened_files[owner] = self.parse_file(self.input_files[owner], self.formats[owner])
@@ -335,6 +335,17 @@ class DataFormatReader:
                     raise IncompatibleVecSizes(file_requested, "Cannot perform" +
                                                " operations with vectors of different sizes at line" + line_number)
 
+                # TODO:
+                """
+                TODO: Make module as a separate function
+                Parameters : save_path, var_requested, format_list 
+                
+                with open(save_path) as new_csv_file:
+                indices = [format_list.index(var) for var in var_requested]
+                all_data_involved = [self.var_vector.get_variable(var) for var in var_requested]
+
+                """
+
                 with open(save_files[file_requested], "w") as new_csv_file:
                     indices = [total.index(var) for var in var_requested]
                     all_data_involved = [self.var_vector.get_variable(var) for var in var_requested]
@@ -444,7 +455,7 @@ class DataFormatReader:
         return data
 
     @staticmethod
-    def parse_file(inp_file: str, format_str: str):
+    def parse_file(inp_file: str, format_list: list):
 
         with open(inp_file, "r") as csv_file:
             lines = csv.reader(csv_file, dialect='excel', delimiter=';')
@@ -452,7 +463,7 @@ class DataFormatReader:
             if csv.Sniffer().has_header(csv_file.readline()):
                 lines.__next__()  # Glance over first\ line
 
-            data = [DataFormatReader.parse_csv_line(format_str, ';'.join(line)) for line in lines
+            data = [DataFormatReader.parse_csv_line(format_list, ';'.join(line)) for line in lines
                     if not str.isspace(';'.join(line)) and line]
 
         return data
@@ -472,12 +483,12 @@ class DataFormatReader:
 
 
 if __name__ == '__main__':
-    Parse_data = Config.URLROOT + r'\RiverData\NewIrisScript.txt'
+    # Parse_data = Config.URLROOT + r'\RiverData\NewIrisScript.txt'
 
     # Debug data, not present in production
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
-    Parse_data = "C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/Breast Cancer/breast_cancer_treat_data.makefile"
+    Parse_data = Config.EXAMPLESROOT + "/River Height/RiverData.makefile"
     dataFormat = DataFormatReader(Parse_data)
     dataFormat.interpret()

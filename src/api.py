@@ -34,7 +34,7 @@ def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[
             for day in complete_range(days):
                 file_v_time = f'{year:04d}-{month:02d}-{day:02d}'
                 req_time = f'{file_v_time}T00:00:00'
-                gen_path = Config.RIVERDATAROOT + f'/SAT-DATA-{file_v_time}.png'
+                gen_path = Config.RIVERDATAROOT + f'/SatelliteData/SAT-DATA-{file_v_time}.png'
 
                 # Request data from nasa api
                 response = requests.get(SAT_REQ_URL + 'TIME=' + req_time + SAT_TILE_INFO, stream=True)
@@ -48,8 +48,8 @@ def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[
 
                 # Overwrite precedent incomplete image
                 b = Image.open(gen_path).convert('RGBA')
-                l = Config.RIVERDATAROOT + '/eu-landscape.png'
-                c = Image.open(l).convert('RGBA')
+                local_path = Config.RIVERDATAROOT + '/eu-landscape.png'
+                c = Image.open(local_path).convert('RGBA')
 
                 # Merge geographic info and precipitation landscape together
                 b.alpha_composite(c)
