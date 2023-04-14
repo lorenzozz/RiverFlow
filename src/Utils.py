@@ -1,5 +1,31 @@
-from DataOrganizer import DataFormatReader  # Csv naive parsing
+import numpy as np
+from typing import Iterable
+
 from Config import *
+from DataOrganizer import DataFormatReader  # Csv naive parsing
+
+
+def _save_file_from_format(dest_path: str, format_list: list, data_points: Iterable):
+    """
+    Saves data points given in data_points inside the destination path specified according
+    to the format list provided. Expects data in row form, not column-wise. (c-contiguous)
+    :param data_points: Data to save
+    :param dest_path: Destination file path
+    :param format_list: Format list
+    :return: No explicit return, saves file into dest_path
+    """
+    with open(dest_path, "w") as new_csv_file:
+        # Get indices of all labels in original formatting string
+        indices = [format_list.index(var) for var in format_list[1::2]]
+
+        lines = []
+        for p in data_points:
+            for i, val in zip(indices, p):
+                format_list[i] = str(val)
+            replace = ''.join(format_list) + '\n'
+            lines.append(replace)
+
+        new_csv_file.writelines(lines)
 
 
 def _sample_n_for_each_hour(path: str, dest_path: str, format_str: str, n: int):
@@ -42,20 +68,82 @@ def _sample_n_for_each_hour(path: str, dest_path: str, format_str: str, n: int):
             l_entry = d_point
             sampled_points.append(d_point)
 
-    with open(dest_path, "w") as new_csv_file:
-        # Get indices of all labels in original formatting string
-        indices = [f_list.index(var) for var in f_list[1::2]]
+    _save_file_from_format(dest_path, format_list=f_list, data_points=sampled_points)
 
-        lines = []
-        for p in sampled_points:
-            for i, val in zip(indices, p):
-                f_list[i] = str(val)
-            replace = ''.join(f_list) + '\n'
-            lines.append(replace)
 
-        new_csv_file.writelines(lines)
+def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, verbose:bool = False):
+    """
+    Pack together all datapoints belonging to a same day. 24 points are expected for
+    each day. Failing to meet this criterion leads to a fatal error (NotImplemented)
+    Note: implicitly expects 'Hour' to be inside the format string.
+    Also expects 'Date' to be inside the format string.
+
+    Moreover, 00:00 must be interpreted to belong to the next day in the data
+    e.g. march 10, 23:59 -> march 11, 00:00
+
+    :param: target_var: Target variable to pack
+    :param: path: Target path location
+    :param: dest_path: Save file path location
+    :param: format_str: Format string of the target csv file
+    :return: No explicit return, saves packed data inside save path file
+    """
+
+    form_l = [el for sp in format_str.split('}') for el in sp.split('{')]
+    data = DataFormatReader.parse_file(path, form_l[::2])
+
+    if target_var not in form_l or 'Hour' not in form_l or 'Date' not in form_l:
+        raise Exception("Incorrect call to _pack_daily(). Hourly data required with target variable.")
+
+    hour_i, date_i, targ_i = form_l[1::2].index('Hour'), form_l[1::2].index('Date'), form_l[1::2].index(target_var)
+
+    # Find first and last aligned datapoints, glance over isolated data samples
+    # Expects military date format HH:MM:SS
+    trim_data = data[next(j for j in range(0, len(data)) if data[j][hour_i] == '00'):
+                     -next(j for j in range(0, len(data)) if data[-j][hour_i] == '00')]
+
+    # Takes list by reference and pads missing hourly values.
+    def pad_missing_into_day(day: list, time_series: list):
+
+        # No way to pad extreme edge cases intelligently.
+        if len(day) < 4:
+            day += ['0'] * (24 - len(day))
+            return
+
+        day_series = {i for i in range(0, 24)}
+        missing = sorted(list(day_series.difference(set([int(day[hour_i]) for day in time_series]))))
+
+        for missing_hour in missing:
+            sub_val = np.mean(np.array(day).astype(np.float32))
+            day.insert(missing_hour, sub_val)
+
+    # Cannot assign both to [] as only one reference is created
+    grouped_data = []
+    curr_day_data = []
+    curr_date = trim_data[0][date_i]
+    for d_p in trim_data:
+        # New day
+        if d_p[date_i] != curr_date:
+            # Missing datapoints
+            if len(curr_day_data) != 24:
+                if verbose:
+                    print(f"> Missing datapoint at date {curr_date}")
+
+                past_date_ind = [date[date_i] for date in trim_data].index(curr_date)
+                pad_missing_into_day(curr_day_data, trim_data[past_date_ind:past_date_ind+len(curr_day_data)])
+
+            grouped_data.append([curr_date, curr_day_data])
+            curr_date = d_p[date_i]
+            curr_day_data = []
+
+        curr_day_data.append(d_p[targ_i])
+
+    # If last datapoint is malformed, just glance over it
+    if len(curr_day_data) == 24:
+        grouped_data.append([curr_date, curr_day_data])
+
+    _save_file_from_format(dest_path, ['', 'Date', ';', target_var, ''], grouped_data)
 
 
 if __name__ == '__main__':
-    _sample_n_for_each_hour(RIVERDATAROOT + '/sesia-height.csv', RIVERDATAROOT + '/sesia-hourly.csv',
-                            '{Date} {Hour}:{Garbage};{Height}', 1)
+    _pack_daily(RIVERDATAROOT + '/sesia-hourly.csv', RIVERDATAROOT + '/sesia-hourly-packed',
+                '{Date} {Hour}:{Garbage};{Values}', 'Values', verbose=True)

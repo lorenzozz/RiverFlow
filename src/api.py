@@ -15,13 +15,14 @@ SAT_TILE_INFO = 'Z&layer=IMERG_Precipitation_Rate&style=default&tilematrixset=2k
                 '&Version=1.0.0&Format=image%2Fpng&TileMatrix=2&TileCol=2&TileRow=0'
 
 
-def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[int, int], verbose=False):
+def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[int, int], verbose:bool = False):
     """
     Populate the requested folder with samples from satellite data acquired from the http api
     specified in global parameters SAT_REQ_URL, SAT_TILE_INFO.
     :param years: Range of years to sample
     :param months: Range of months to sample
     :param days: Range of days to sample
+    :param verbose: Output task done on console or don't
     :return: No explicit return, fills RiverData folder with satellite data.
     """
 
