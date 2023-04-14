@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Iterable
+from typing import Iterable, Type
 
 from Config import *
 from DataOrganizer import DataFormatReader  # Csv naive parsing
@@ -71,7 +71,7 @@ def _sample_n_for_each_hour(path: str, dest_path: str, format_str: str, n: int):
     _save_file_from_format(dest_path, format_list=f_list, data_points=sampled_points)
 
 
-def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, verbose:bool = False):
+def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, cast_to: Type, verbose: bool = False):
     """
     Pack together all datapoints belonging to a same day. 24 points are expected for
     each day. Failing to meet this criterion leads to a fatal error (NotImplemented)
@@ -85,6 +85,8 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, ver
     :param: path: Target path location
     :param: dest_path: Save file path location
     :param: format_str: Format string of the target csv file
+    :param: cast_to: Type of target variable
+    :param: verbose: Print incomplete days
     :return: No explicit return, saves packed data inside save path file
     """
 
@@ -135,7 +137,7 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, ver
             curr_date = d_p[date_i]
             curr_day_data = []
 
-        curr_day_data.append(d_p[targ_i])
+        curr_day_data.append(cast_to(d_p[targ_i]))
 
     # If last datapoint is malformed, just glance over it
     if len(curr_day_data) == 24:
@@ -146,4 +148,4 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, ver
 
 if __name__ == '__main__':
     _pack_daily(RIVERDATAROOT + '/sesia-hourly.csv', RIVERDATAROOT + '/sesia-hourly-packed',
-                '{Date} {Hour}:{Garbage};{Values}', 'Values', verbose=True)
+                '{Date} {Hour}:{Garbage};{Values}', 'Values', np.float32, verbose=True)
