@@ -81,6 +81,18 @@ def vec_std(x):
     return np.std(x)
 
 
+def vec_load(x, sep: str, enclosed=True):
+    """
+    Load vector from categorical variable
+    :param x: Target categorical variable
+    :param sep: Separator of vector string
+    :param enclosed: Whether marks like '[' and ']' are present
+    :return: the loaded vector
+    """
+    d = np.array([np.fromstring(s[1:-1] if enclosed else s, float, sep=sep) for s in x])
+    return d
+
+
 def vec_add_noise(x, distribution, *args):
     """
     Adds noise of the requested distribution, mean and std (varying on distribution)

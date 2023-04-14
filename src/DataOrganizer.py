@@ -457,10 +457,18 @@ class DataFormatReader:
     @staticmethod
     def parse_file(inp_file: str, format_list: list):
 
+        line_peek_amt = 2
+
+        def peek_line(f):
+            pos = f.tell()
+            line = ''.join([f.readline() for _ in range(line_peek_amt)])
+            f.seek(pos)
+            return line
+
         with open(inp_file, "r") as csv_file:
             lines = csv.reader(csv_file, dialect='excel', delimiter=';')
 
-            if csv.Sniffer().has_header(csv_file.readline()):
+            if csv.Sniffer().has_header(peek_line(csv_file)):
                 lines.__next__()  # Glance over first\ line
 
             data = [DataFormatReader.parse_csv_line(format_list, ';'.join(line)) for line in lines

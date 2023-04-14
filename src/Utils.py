@@ -108,7 +108,7 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, cas
 
         # No way to pad extreme edge cases intelligently.
         if len(day) < 4:
-            day += ['0'] * (24 - len(day))
+            day += [cast_to(0.0)] * (24 - len(day))
             return
 
         day_series = {i for i in range(0, 24)}
@@ -143,9 +143,10 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, cas
     if len(curr_day_data) == 24:
         grouped_data.append([curr_date, curr_day_data])
 
+    print([len(g[1]) for g in grouped_data].count(24), len(grouped_data))
     _save_file_from_format(dest_path, ['', 'Date', ';', target_var, ''], grouped_data)
 
 
 if __name__ == '__main__':
-    _pack_daily(RIVERDATAROOT + '/sesia-hourly.csv', RIVERDATAROOT + '/sesia-hourly-packed',
+    _pack_daily(RIVERDATAROOT + '/sesia-hourly.csv', RIVERDATAROOT + '/sesia-hourly-packed.csv',
                 '{Date} {Hour}:{Garbage};{Values}', 'Values', np.float32, verbose=True)

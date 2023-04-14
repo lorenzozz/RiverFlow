@@ -93,6 +93,9 @@ class Aligner:
         else:
             self.budgets[var_name][1] -= request[1]
 
+        print("Windows:",self.windows)
+        print("Budget:", self.budgets)
+
     def show_status(self):
         print(self.windows)
         print(self.budgets)
@@ -147,12 +150,13 @@ class Aligner:
         """
         max_lb = max(self.lower_bound)
         min_ub = min(self.upper_bound)
+        print("max_lb, minUb", max_lb, min_ub)
 
         l_bot = self.get_logical(max_lb - self.bot_slide(var_name), var_name)
-
+        print(var_name, l_bot)
         # Add 1 to account for python indexing
         l_top = 1 + self.get_logical(min_ub + self.top_slide(var_name), var_name)
-
+        print(var_name, l_top)
         # The +1 accounts for the fact that the current element is included in the window
         # Thus the window has size (prev_request, 1+after_request)
         slider = self.top_slide(var_name) + self.bot_slide(var_name) + 1
@@ -162,7 +166,7 @@ class Aligner:
         var = self.var_vec.get_variable(var_name)
 
         # Else attempt not is_instance(var[0], '__next__')
-
+        print(self.var_vec.get_variable(var_name)[0:5])
         if not np.iterable(var[0]):
             # Var is a 1-d numpy vector (var.ndim==1)
             conv_data = np.lib.stride_tricks.sliding_window_view(trimmed_data, slider)
@@ -170,9 +174,11 @@ class Aligner:
             # Each element of var is an iterable. Currently supports just one-dimensional data
             # (In the future, it may support tensor maps)
             e_size = np.size(var[0])
-
+            print(trimmed_data)
             views = np.lib.stride_tricks.sliding_window_view(trimmed_data, (slider, e_size))
+            print(views[0:1])
             conv_data = np.array([np.concatenate(*w) for w in views])
+            print(conv_data[0])
         return conv_data
 
     def singleton(self, var_name):

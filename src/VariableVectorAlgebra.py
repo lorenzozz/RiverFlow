@@ -121,6 +121,7 @@ class VariableVectorManager:
             "tronca": vec_truncate,
             "one_hot_encode": vec_one_hot,
             "stack": vec_stack,
+            "load_vec": vec_load,
             "gaussiana": "gaussiana",  # Label
             "esponenziale": "esponenziale",  # Label
             "uniforme": "uniforme",  # Label

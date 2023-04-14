@@ -8,10 +8,10 @@ __dependencies__ = ['numpy 1.20', 'tensorflow .', 'matplotlib .']
 if __name__ == '__main__':
     None
 
-    # make_file = "C:/Users/picul/OneDrive/Documenti/RiverData/Test.npz"
-    # with np.load(make_file) as model:
-    #     print(model['Gianfranco'][0])
-    #     print(model['Gianfranco'].shape)
-    #     print(model['y'][0])
-    # Make_File = DataFormatReader(make_file)
-    # Make_File.interpret()
+    make_file = Config.EXAMPLESROOT + "/River Height/savefile.npz"
+    with np.load(make_file) as model:
+        print(model['x'][0], model['y'][0])
+        print(model['x'][1], model['y'][1])
+
+        print(model['x'].shape)
+        print(model['y'][0])
