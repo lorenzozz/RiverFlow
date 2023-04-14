@@ -1,11 +1,11 @@
+import time  # dates comparison
+
 import numpy
+import numpy as np  # Vector support, sliding view.
 
 from DatasetErrors import *
 from LogManager import *
 from VariableVectorAlgebra import VariableVectorManager
-
-import numpy as np  # Vector support, sliding view.
-import time  # dates comparison
 
 
 class Aligner:
@@ -93,9 +93,6 @@ class Aligner:
         else:
             self.budgets[var_name][1] -= request[1]
 
-        print("Windows:",self.windows)
-        print("Budget:", self.budgets)
-
     def show_status(self):
         print(self.windows)
         print(self.budgets)
@@ -150,13 +147,10 @@ class Aligner:
         """
         max_lb = max(self.lower_bound)
         min_ub = min(self.upper_bound)
-        print("max_lb, minUb", max_lb, min_ub)
 
         l_bot = self.get_logical(max_lb - self.bot_slide(var_name), var_name)
-        print(var_name, l_bot)
         # Add 1 to account for python indexing
         l_top = 1 + self.get_logical(min_ub + self.top_slide(var_name), var_name)
-        print(var_name, l_top)
         # The +1 accounts for the fact that the current element is included in the window
         # Thus the window has size (prev_request, 1+after_request)
         slider = self.top_slide(var_name) + self.bot_slide(var_name) + 1
@@ -166,19 +160,16 @@ class Aligner:
         var = self.var_vec.get_variable(var_name)
 
         # Else attempt not is_instance(var[0], '__next__')
-        print(self.var_vec.get_variable(var_name)[0:5])
         if not np.iterable(var[0]):
             # Var is a 1-d numpy vector (var.ndim==1)
             conv_data = np.lib.stride_tricks.sliding_window_view(trimmed_data, slider)
         else:
-            # Each element of var is an iterable. Currently supports just one-dimensional data
+            # Each element of var is an iterable. Currently, supports just one-dimensional data
             # (In the future, it may support tensor maps)
             e_size = np.size(var[0])
-            print(trimmed_data)
+
             views = np.lib.stride_tricks.sliding_window_view(trimmed_data, (slider, e_size))
-            print(views[0:1])
             conv_data = np.array([np.concatenate(*w) for w in views])
-            print(conv_data[0])
         return conv_data
 
     def singleton(self, var_name):
@@ -212,9 +203,10 @@ class Aligner:
     def create_alignment(self):
 
         # Find first element present in all aligning elements.
-        var_data = [self.var_vec.get_variable(var) for var in self.alignment]
-        intersection = var_data[0]
-        for data in var_data:
+        align_data = [self.var_vec.get_variable(var) for var in self.alignment]
+        intersection = align_data[0]
+
+        for data in align_data:
             intersection = np.intersect1d(data, intersection)
 
         """
@@ -228,8 +220,9 @@ class Aligner:
         0   1   2   3   4                 window: (0, 4) bottom_align = 0
                 2   3   4   5   6         window: (2, 6) bottom_align = 2
         """
+        # TODO: Search for misalignment e.g. missing days!!!
 
-        bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in var_data]
+        bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in align_data]
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
 
@@ -245,7 +238,7 @@ class Aligner:
                 2   3   4   5   6         window: (2, 6) bottom_align = 6
         """
 
-        sizes = [np.size(data) for data in var_data]
+        sizes = [np.size(data) for data in align_data]
         up_locs = [size + bottom - 1 for size, bottom in zip(sizes, bottom_aligns)]
         min_up = min(up_locs)
 
@@ -382,7 +375,7 @@ class DatasetPlanner:
         align_factors = []
         align_format = alignment_mode = target_variable = None
 
-        plan = [l for l in self.raw[1:end_of_decl] if l not in {'{\n', '}\n'} and not str.isspace(l)]
+        plan = [lin for lin in self.raw[1:end_of_decl] if lin not in {'{\n', '}\n'} and not str.isspace(lin)]
 
         for statement in plan:
 

@@ -1,9 +1,23 @@
 .decl
+source_file MeteoFile = EXAMPLESROOT + '/River Height/LOZZOLO_Dati.csv'
+{Data};{Precipitazione};{TemperaturaMedia};{TemperaturaMassima};{TemperaturaMinima};{Velocita};{Raffica};{Durata};{Settore};{TempoPermanenza}
+
 source_file RiverFile = EXAMPLESROOT + '/River Height/sesia-hourly-packed.csv'
-{Date};{Value}
+{DateTarg};{Value}
 .res
 
-Date: categorical
+Data: categorical
+Precipitazione: numeric
+TemperaturaMedia: numeric
+TemperaturaMassima: numeric
+TemperaturaMinima: numeric
+Velocita: numeric
+Raffica: numeric
+Durata: numeric
+Settore: categorical
+TempoPermanenza: numeric
+
+DateTarg: categorical
 Value: categorical
 
 .act
@@ -14,8 +28,9 @@ new Self = np.arange(0, len(Res))
 new Self2 = np.arange(0, len(Res))
 new Self3 = np.arange(0, len(Res))
 
-
 .sap
+
+
 .make
 
 plan_file NewFile = EXAMPLESROOT + '/River Height/savefile'
@@ -23,16 +38,14 @@ log_file Logs = EXAMPLESROOT + '/River Height/savefile'
 
 begin plan NewPlan expecting attempt_recovery
 {
-    align Res against Self as index
-    align Self2 against Self as index
-    align Self3 against Self as index
+    align Precipitazione against Data as date with format %Y-%M-%D
+    align Res against DateTarg as date with format %Y-%M-%D
     consider x
 
-    take 2 after x from Self3
-    take 2 before x from Res
-    make Self2 the target and take y from Self2
-    pair x and target
+    take 16 before x from Precipitazione
 
+    make Precipitazione the target and take y from Precipitazione
+    pair x and target
 }
 end plan
 

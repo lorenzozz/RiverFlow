@@ -1,16 +1,16 @@
 > Changing field error to attempt_recovery
-> Generated 1733 data points from input configuration
-> Non target variables:['Res', 'Self3'], Target variables: Self2
+> Generated 349 data points from input configuration
+> Non target variables:['Precipitazione'], Target variables: Res
 > Successfully compiled the plan as a (x,y) pair with labels x e y
 
 > DATA FED INTO THE MODEL:
 
-> | Res                | Self3              
-> | 2 before x    X    | X    2 before x    
-> <----> <----> <-^^-> <-^^-> <----> <----> 
+> | Precipitazione             
+> | 16 before x           X    
+> <---->  ..14.. <----> <-^^-> 
 
 > EXPECTED OUTPUT OF THE MODEL:
 
-> | Self2 
-> | Y     
-> <-^^->  
+> | Res  
+> | Y    
+> <-^^-> 
