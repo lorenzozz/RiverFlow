@@ -1,5 +1,6 @@
 import numpy as np
 import Config
+import tensorflow as tf
 
 __licence__ = 'Comune di Val Sesia, agenzia federale'
 __version__ = '0.1'
@@ -14,4 +15,11 @@ if __name__ == '__main__':
         print(model['x'][1], model['y'][1])
 
         print(model['x'].shape)
-        print(model['y'][0])
+        print(np.size(model['y'][0]))
+
+        model = tf.keras.models.Sequential([
+            tf.keras.layers.Dense(2457, activation='relu'),
+            tf.keras.layers.Dense(128, activation='relu'),
+            tf.keras.layers.Dropout(0.3),
+            tf.keras.layers.Dense(168)
+        ])

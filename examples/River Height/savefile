@@ -1,16 +1,16 @@
 > Changing field error to attempt_recovery
-> Generated 349 data points from input configuration
-> Non target variables:['Precipitazione'], Target variables: Res
+> Generated 275 data points from input configuration
+> Non target variables:['TemperaturaMassima', 'Precipitazione', 'ResF', 'TemperaturaMedia'], Target variables: ['ResT']
 > Successfully compiled the plan as a (x,y) pair with labels x e y
 
 > DATA FED INTO THE MODEL:
 
-> | Precipitazione             
-> | 16 before x           X    
-> <---->  ..14.. <----> <-^^-> 
+> | TemperaturaMassima         | Precipitazione             | ResF                       | TemperaturaMedia           
+> | 90 before x           X    | 90 before x           X    | 90 before x           X    | 90 before x           X    
+> <---->  ..88.. <----> <-^^-> <---->  ..88.. <----> <-^^-> <---->  ..88.. <----> <-^^-> <---->  ..88.. <----> <-^^-> 
 
 > EXPECTED OUTPUT OF THE MODEL:
 
-> | Res  
-> | Y    
-> <-^^-> 
+> | ResT                      
+> | Y    6 after y            
+> <-^^-> <---->  ..4.. <----> 

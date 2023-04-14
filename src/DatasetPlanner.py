@@ -3,6 +3,8 @@ import time  # dates comparison
 import numpy
 import numpy as np  # Vector support, sliding view.
 
+from typing import Tuple
+
 from DatasetErrors import *
 from LogManager import *
 from VariableVectorAlgebra import VariableVectorManager
@@ -14,22 +16,25 @@ class Aligner:
         self.variables: list[str] = variables
         self.alignment: list[str] = aligning_variables
 
-        self.windows = {}
+        self.windows: dict = {}
         # Upper alignment budget and Lower alignment budget are stored in the same tuple
-        self.budgets = {}
-        self.var_vec: VariableVectorManager = var_vec
+        self.budgets: dict = {}
         self.init_align = None
 
         self.target_var = None
+        self.target_vars = []
+
+        self.var_vec: VariableVectorManager = var_vec
+
         # Initialize the aligning underlying structure
         # Necessary to map virtual indexes to logical indexes
-        self.initial_align = {}
+        self.initial_align: dict = {}
 
         self.create_alignment()
 
         # Describes whether a variable must generate n-dimensional views over its values or
         # single points
-        self.window_generation_type = {}
+        self.sliding_window = {}
 
     @staticmethod
     def get_formatted_date_equal(string):
@@ -43,37 +48,46 @@ class Aligner:
     def index_equal(*numbers):
         all([numbers][0] == n_2 for n_2 in [numbers])
 
-    def wants(self, var_name, request: list):
+    def wants(self, var_name: str, request: Tuple[int, int]):
+        """
+        Tells the aligner that <var_name> has to keep a window of size <request> over the data.
+        A window makes only sense as a tuple of positive integers, referring to the leftmost and
+        rightmost datapoint respectively.
 
+        WINDOW KEEPING ALGORITHM:
+        When a variable requests to keep a window to slide over the
+        data array, it must be checked whether the variable has the ability
+        to do so without influencing the behaviour of other variables.
+        example:
+
+        Data1: [...], Data1_alignment : [0, 1, 2, 3, 4, 5, 6, 7]
+        Data2: [...], Data2_alignment : [4, 5, 6, 7]
+        Alignment described:
+        0   1   2   3   4   5   6   7       window: (0, 4) bottom_align = 0
+            |---|---|---4   5   6   7       window: (2, 6) bottom_align = 2
+                        ^ Begin of transcription
+
+        If data1 asks to keep a sliding window (e.g. 3) in the final model, there is no need
+        to change the behaviour of data2, for there are enough values of Data1 before
+        the beginning of the alignment to do so. Suppose now Data1 requests a window
+        of length 4. We are now obliged to throw away Data2 point 4, as it simply does not
+        have 4 values of data1 behind it.
+
+        0   1   2   3   4   5   6   7       window: (0, 4) bottom_align = 0
+            |---|---|---4---5   6   7       window: (2, 6) bottom_align = 2
+                            ^ Begin of transcription
+
+        :param var_name: The name of the variable
+        :param request: The request as a [req_bottom, req_top] pair
+        :return: No explicit return, updates model.
+        """
         # A variable's behaviour during model creation can only
         # be specified once per model.
 
-        if var_name in self.window_generation_type.keys():
-            raise VariableSliceRedefinition(var_name)
-        self.window_generation_type[var_name] = request
-
-        # Window keeping algorithm:
-        # When a variable requests to keep a window to slide over the
-        # data array, it must be checked whether the variable has the ability
-        # to do so without influencing the behaviour of other variables.
-        # example:
-
-        # Data1: [...], Data1_alignment : [0, 1, 2, 3, 4, 5, 6, 7]
-        # Data2: [...], Data2_alignment : [4, 5, 6, 7]
-        # Alignment described:
-        # 0   1   2   3   4   5   6   7       window: (0, 4) bottom_align = 0
-        #     |---|---|---4   5   6   7       window: (2, 6) bottom_align = 2
-        #                 ^ Begin of transcription
-
-        # If data1 asks to keep a sliding window (e.g. 3) in the final model, there is no need
-        # to change the behaviour of data2, for there are enough values of Data1 before
-        # the beginning of the alignment to do so. Suppose now Data1 requests a window
-        # of length 4. We are now obliged to throw away Data2 point 4, as it simply does not
-        # have 4 values of data1 behind it.
-
-        # 0   1   2   3   4   5   6   7       window: (0, 4) bottom_align = 0
-        #     |---|---|---4---5   6   7       window: (2, 6) bottom_align = 2
-        #                     ^ Begin of transcription
+        # TODO: Better error control.
+        # if var_name in self.window_generation_type.keys():
+        #    raise VariableSliceRedefinition(var_name)
+        self.sliding_window[var_name] = request
 
         budget = self.budgets[var_name]
 
@@ -99,6 +113,7 @@ class Aligner:
 
     def add_target(self, target_var):
         self.target_var = target_var
+        self.target_vars.append(target_var)
 
     def get_convolution(self, var_name):
         """
@@ -172,10 +187,18 @@ class Aligner:
             conv_data = np.array([np.concatenate(*w) for w in views])
         return conv_data
 
-    def singleton(self, var_name):
-        if var_name in self.window_generation_type.keys():
-            raise VariableSliceRedefinition(var_name)
-        self.window_generation_type[var_name] = [0, 0]
+    def singleton(self, var_name) -> None:
+        """
+        Adds variable as a 1dimensional feature to the model to the internal
+        aligner, thus no window is kept over the data.
+        :param var_name: The name of the variable
+        :return: No explicit returns, updates aligner
+        """
+
+        # TODO: Add better control
+        # if var_name in self.window_generation_type.keys() :
+        #    raise VariableSliceRedefinition(var_name)
+        self.sliding_window[var_name] = [0, 0]
 
     @property
     def lower_bound(self):
@@ -187,15 +210,15 @@ class Aligner:
 
     def bot_slide(self, name):
         if isinstance(name, list):
-            return [self.window_generation_type[var][0] for var in name]
+            return [self.sliding_window[var][0] for var in name]
         else:
-            return self.window_generation_type[name][0]
+            return self.sliding_window[name][0]
 
     def top_slide(self, name):
         if isinstance(name, list):
-            return [self.window_generation_type[var][1] for var in name]
+            return [self.sliding_window[var][1] for var in name]
         else:
-            return self.window_generation_type[name][1]
+            return self.sliding_window[name][1]
 
     def get_logical(self, index, name):
         return index - self.initial_align[name]
@@ -299,13 +322,13 @@ class DatasetPlanner:
         c_tok, x_tok = '<----> ', '<-^^-> '
         n_f = d_f = g_f = "> "
         for var in vs:
-            l_wn, t_wn = self.aligner.window_generation_type[var]
+            l_wn, t_wn = self.aligner.sliding_window[var]
             b_wn = c_tok * l_wn if l_wn < 4 else c_tok + f" ..{l_wn - 2}.. " + c_tok
             u_wn = c_tok * t_wn if t_wn < 4 else c_tok + f" ..{t_wn - 2}.. " + c_tok
             r = b_wn + x_tok + u_wn
             v_l = f"| {var} "
-            w_l = "| " + (f"{l_wn} before x" if b_wn else "").ljust(len(b_wn), ' ') + f"{align.upper()}   " + \
-                  (f" {t_wn} before {align.lower()}" if t_wn else "").ljust(len(u_wn), ' ')
+            w_l = "| " + (f"{l_wn} before {align.lower()}" if b_wn else "").ljust(len(b_wn), ' ') +\
+                  f"{align.upper()}   " + (f" {t_wn} after {align.lower()}" if t_wn else "").ljust(len(u_wn), ' ')
             max_l = max(len(r), len(v_l), len(w_l))
             r, w_l, v_l = r.ljust(max_l), w_l.ljust(max_l), v_l.ljust(max_l)
             n_f += v_l
@@ -327,7 +350,7 @@ class DatasetPlanner:
         """
 
         # MULTI TARGET INCAPABLE!!
-        t_vars = [self.aligner.target_var]
+        t_vars = self.aligner.target_vars
         nt_vars = [v for v in self.aligner.variables if v not in t_vars]
 
         x_desc, y_desc = self.__data_row_desc(nt_vars, 'x'), self.__data_row_desc(t_vars, 'y')
@@ -402,19 +425,23 @@ class DatasetPlanner:
                                                          "date alignment")
 
                 self.aligner = Aligner(self.vec_vars, align_vars, align_factors)
+
+            # STATEMENT make <Varname> the target and <Window_statement> |
+            #           make <VarName> the target (Currently has no meaning semantically.)
             elif 'make' in statement:
+
                 target_variable = statement.split('make')[1].split('the')[0].strip()
 
-                # Immediate vectorial model output request recognized
+                self.aligner.add_target(target_variable)
+
+                # A window statement follows
                 if 'take' in statement:
-                    self._parse_window_request_statement(statement.split('and')[1].strip())
+                    self._parse_window_request_statement(statement.split('and', 1)[1].strip())
 
             elif 'pair' in statement:
                 if not self.aligner:
                     raise BadAlignmentCommand(statement, "Plan and x declaration must precede the binding of x and "
                                                          "the target")
-
-                self.aligner.add_target(target_variable)
 
             else:
                 # Else assume statement is a composite description
@@ -537,12 +564,12 @@ class DatasetPlanner:
         n_data_points = m_ub - m_lb + 1
         self.logs.log(f"> Generated {n_data_points} data points from input configuration")
 
-        no_target_v = [v for v in self.aligner.variables if v != self.aligner.target_var]
+        no_target_v = [v for v in self.aligner.variables if v not in self.aligner.target_vars]
         self.logs.log(f"> Non target variables:" + str(no_target_v) +
-                      f", Target variables: {self.aligner.target_var}")
+                      f", Target variables: {self.aligner.target_vars}")
         try:
             x_data = np.hstack([self.aligner.get_convolution(var) for var in no_target_v])
-            y_data = self.aligner.get_convolution(self.aligner.target_var)
+            y_data = np.hstack([self.aligner.get_convolution(t_var) for t_var in self.aligner.target_vars])
         except ValueError:
             raise DatasetInternalError(self.specs['name'])
 

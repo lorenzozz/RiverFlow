@@ -23,10 +23,11 @@ Value: categorical
 .act
 
 import numpy as np
-new Res = load_vec(Value, ',')
-new Self = np.arange(0, len(Res))
-new Self2 = np.arange(0, len(Res))
-new Self3 = np.arange(0, len(Res))
+new ResF = load_vec(Value, ',')
+new ResT = ResF
+new Self = np.arange(0, len(ResF))
+new Self2 = np.arange(0, len(ResF))
+new Self3 = np.arange(0, len(ResF))
 
 .sap
 
@@ -38,13 +39,18 @@ log_file Logs = EXAMPLESROOT + '/River Height/savefile'
 
 begin plan NewPlan expecting attempt_recovery
 {
+    align TemperaturaMassima against Data as date with format %Y-%M-%D
     align Precipitazione against Data as date with format %Y-%M-%D
-    align Res against DateTarg as date with format %Y-%M-%D
+    align ResT, ResF against DateTarg, DateTarg as date with format %Y-%M-%D
+    align TemperaturaMedia against Data as date with format %Y-%M-%D
     consider x
 
-    take 16 before x from Precipitazione
+    take 90 before x from TemperaturaMassima
+    take 90 before x from TemperaturaMedia
+    take 90 before x from ResF
+    take 90 before x from Precipitazione
 
-    make Precipitazione the target and take y from Precipitazione
+    make ResT the target and take 6 after y from ResT
     pair x and target
 }
 end plan
