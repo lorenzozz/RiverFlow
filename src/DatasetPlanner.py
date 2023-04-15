@@ -396,7 +396,7 @@ class DatasetPlanner:
 
         align_vars = []
         align_factors = []
-        align_format = alignment_mode = target_variable = None
+        align_format = alignment_mode = None
 
         plan = [lin for lin in self.raw[1:end_of_decl] if lin not in {'{\n', '}\n'} and not str.isspace(lin)]
 
