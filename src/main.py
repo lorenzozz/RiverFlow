@@ -2,6 +2,11 @@ import numpy as np
 import Config
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import os
+
+#escape conda libiomp5md problem
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
 
 __licence__ = 'Comune di Val Sesia, agenzia federale'
 __version__ = '0.1'
@@ -11,17 +16,15 @@ if __name__ == '__main__':
 
     make_file = Config.EXAMPLESROOT + "/River Height/savefile.npz"
     test_file = Config.EXAMPLESROOT + "/River Height/test.npz"
+
+    #open training data
     with np.load(make_file) as model_data:
+        #open test data
         with np.load(test_file) as test_data:
 
             print("> Training set:", model_data['x'].shape, model_data['y'].shape)
             print("> Test set:", test_data['x'].shape, test_data['y'].shape)
-
-            x = tf.constant([[1, 2, 3], [1,2, 3]])
-
-            var = tf.Variable([1, 2, 3])
-            var.assign([1, 4, 3])
-
+   
             model = tf.keras.Sequential(
                 [
                     tf.keras.layers.InputLayer(input_shape=(model_data['x'].shape[1],)),
@@ -54,7 +57,7 @@ if __name__ == '__main__':
 
             g_truth = []
             p = []
-            for i in range(0, len(test_data['y']), y):
+            for i in range(0, len(test_data['y'])):
 
                 x_test = np.expand_dims(test_data['x'][i],0)
                 p.append(model.predict(x_test)[0])

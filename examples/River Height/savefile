@@ -1,9 +1,9 @@
 > Changing field error to attempt_recovery
-> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/src/../examples/River Height/savefile', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/src/../examples/River Height/test']
-> Changing field proportions to [50, 50]
+> Changing field split files to ['C:/Users/marco/OneDrive/Documenti/RiverFlow/examples/River Height/savefile', 'C:/Users/marco/OneDrive/Documenti/RiverFlow/examples/River Height/test']
+> Changing field proportions to [60, 40]
 > Generated 335 data points from input configuration
 > Non target variables:['TemperaturaMassima', 'Precipitazione', 'ResF', 'TemperaturaMedia'], Target variables: ['ResT']
-> Successfully compiled the plan as a list of (x,y) pairs with labels "x" e "y" split with  percentages [50, 50]
+> Successfully compiled the plan as a list of (x,y) pairs with labels "x" e "y" split with  percentages [60, 40]
 
 > DATA FED INTO THE MODEL:
 
