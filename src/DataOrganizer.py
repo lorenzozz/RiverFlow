@@ -3,6 +3,7 @@ import math  # Supported package
 import Config
 
 from matplotlib import pyplot as plt
+from os import path
 
 from Errors import *  # Errors
 from VariableVectorAlgebra import *  # Vectorial algebra
@@ -116,30 +117,50 @@ class DataFormatReader:
                                  " section in format file (missing .decl?) ")
 
     def create_variable_vectors(self):
+        """ Create vectors from specified variables.
+        Failing to indicate a source file for a given variable causes
+        an exception to be raised. No attempt to recovery is made
+        if a filepath is malformed or problematic.
+        """
 
         opened_files = {}
         for variable in self.variables:
 
-            owner = next((label for label in self.input_files.keys()
-                          if variable in self.files_arglists[label]), None)
-
+            # Get owner file for each variable by searching for
+            # the variable label inside each file's argument list
+            owner = next(
+                (label for label in self.input_files.keys()
+                 if variable in self.files_arglists[label]),
+                None
+            )
             if not owner:
-                raise BadFormatStyle(self.format_path, f"Variable {variable} has no" +
-                                     f" associated source file.")
+                raise BadFormatStyle(
+                    self.format_path,
+                    f"Expected variable {variable} to have an associated "
+                    f"owner source file, got no file instead. Please specify a "
+                    f"source for the variable."
+                )
 
             if owner not in opened_files.keys():
-                opened_files[owner] = self.parse_file(self.input_files[owner], self.formats[owner])
+                # Parse owner file
+                opened_files[owner] = self.parse_file(
+                    self.input_files[owner],
+                    self.formats[owner]
+                )
 
+            # Note that Categorical and Boolean variables are not converted
+            # to float automatically.
+            as_type = VariableVectorManager.take_type(self.variables[variable])
+
+            # Take index of target variable and file out of loop.
             var_col_i = self.files_arglists[owner].index(variable)
-
-            # Pass new variable onto vector mathematics manager
             file_data = opened_files[owner]
-            # Categorical and Boolean variables are not converted to float autonomously.
-            as_type = self.var_vector.take_type(self.variables[variable])
 
             self.var_vector.add_variable(variable, [
                 row[var_col_i] for row in file_data
             ], as_type)
+
+        return
 
     def parse_part_two(self):
 
@@ -364,9 +385,11 @@ class DataFormatReader:
         plan_sec = self.rows.index('.make\n') + 1
         current_row = plan_sec
 
-        plan_registered = {}
-        plan_save_files = {"None": None}
-        log_save_files = {}
+        plan_registered = dict()
+        plan_save_files = {
+            "None": None
+        }
+        log_save_files = dict()
 
         while current_row < len(self.rows):
             statement = self.rows[current_row]
@@ -434,45 +457,72 @@ class DataFormatReader:
 
             current_row = current_row + 1
 
-    def print_data(self):
-        print(self.rows)
-
-    @staticmethod
-    def parse_csv_line(format_string, line):
-        data = []
-        # Cut head of line
-        # print(line, format_string)
-
-        if format_string[0]:
-            line = line.split(format_string[0], 1)[1]
-        for sep in format_string[1:]:
-            if sep:
-                line = line.split(sep, 1)
-                data.append(line[0])
-                line = line[1]
-        if not format_string[-1]:
-            data.append(line)
-        return data
-
     @staticmethod
     def parse_file(inp_file: str, format_list: list):
+        """ Parses input file according to format list specified into format_list.
+
+        The format list can be:
+          - A list
+          - A numpy array of unicode strings
+          - An iterable
+          - A string with a __next__ method
+        Values inside inp_file are separate according to format_list according
+        to each element inside the list.
+        Each element of the format string is matched against each line in greedy
+        search for a match. Whenever a match occurs, the input line is truncated
+        according to the separator.
+
+          Args:
+
+          :param inp_file: The file path of the input file
+          :param format_list: A format list used in the parsing operation
+          :return: The data fields as requested as a python iterable.
+
+        """
 
         line_peek_amt = 2
 
-        def peek_line(f):
+        def peek_lines(f):
+            # Peek into file without incrementing file pointer
+            # to not lose any data point.
+            nonlocal line_peek_amt
             pos = f.tell()
             line = ''.join([f.readline() for _ in range(line_peek_amt)])
             f.seek(pos)
             return line
 
+        if not path.exists(inp_file):
+            raise FileNotFoundError("Attempting to parse a non existing file. Expected"
+                                    "a valid filepath, found {}".__format__(inp_file))
+
         with open(inp_file, "r") as csv_file:
             lines = csv.reader(csv_file, dialect='excel', delimiter=';')
 
-            if csv.Sniffer().has_header(peek_line(csv_file)):
-                lines.__next__()  # Glance over first\ line
+            # Sniff over a few lines of target file, if it contains a header
+            # glance over it
+            if csv.Sniffer().has_header(peek_lines(csv_file)):
+                lines.__next__()
 
-            data = [DataFormatReader.parse_csv_line(format_list, ';'.join(line)) for line in lines
-                    if not str.isspace(';'.join(line)) and line]
+            def _parse_csv_line(format_string: list[str], line: str):
+                parsed_data = []
+                # Cut head of line
+                if format_string[0]:
+                    line = line.split(format_string[0], 1)[1]
+                for sep in format_string[1:]:
+                    # Sep might be empty string ""
+                    if sep:
+                        line = line.split(sep, 1)
+                        parsed_data.append(line[0])
+                        line = line[1]
+                if not format_string[-1]:
+                    parsed_data.append(line)
+                return parsed_data
+
+            data = [
+                _parse_csv_line(format_list, ';'.join(line))
+                for line in lines
+                if not str.isspace(';'.join(line)) and line is not None
+            ]
 
         return data
 

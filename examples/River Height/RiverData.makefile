@@ -55,7 +55,7 @@ begin plan NewPlan expecting attempt_recovery
     take 30 before x from ResF
     take 30 before x from Precipitazione
 
-    make ResT the target and take 7 after y from ResT
+    make ResT the target and take y from ResT
     pair x and target
 }
 end plan

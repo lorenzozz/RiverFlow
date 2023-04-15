@@ -28,7 +28,7 @@ class VariableVectorManager:
             self.variables[var_name] = intermediate.astype(as_type)
 
         self.variables_dims[var_name] = np.size(self.variables[var_name])
-        if self.env:
+        if self.env is not None:
             self.env[var_name] = self.variables[var_name]
 
     def add_copy_of(self, variable_to_copy, new_label):
@@ -103,9 +103,18 @@ class VariableVectorManager:
             self.error_issuer = issue_error
 
     def load_grammar_mapper(self):
+        """
+        Defines the environment in which the .make section runs inside
+        the python eval() virtual machine. Other than the environment defined
+        below, it is possible to extend it making use of the
+            import <recognized_packet> as <alias>
+            or
+            import <recognized_packet>
+        statement.
+        """
 
-        # Predefined function aliases.
         self.env = {
+            # Primitive functions
             "discretizza": vec_discrete,
             "aggiungi_rumore": vec_add_noise,
             "da_categorico_a_numero": vec_bool_to_num,
@@ -122,21 +131,39 @@ class VariableVectorManager:
             "one_hot_encode": vec_one_hot,
             "stack": vec_stack,
             "load_vec": vec_load,
-            "gaussiana": "gaussiana",  # Label
-            "esponenziale": "esponenziale",  # Label
-            "uniforme": "uniforme",  # Label
+
+            # Local functional data
+
+            "gaussiana": "gaussiana",  # Gaussian np.normal distribution
+            "esponenziale": "esponenziale",  # Exponential np.exponential distribution
+            "uniforme": "uniforme",  # Uniform np.uniform distribution
+
+            # Keyword definitions
         }
+        # Enhance environment with user-defined variables.
         self.env.update(self.variables)
 
     @staticmethod
-    def take_type(var_type):
-        try:
-            return {"categorical": str,
-                    "boolean": str,
-                    "numeric": np.float64,
-                    "integer": np.int32}[var_type]
-        except KeyError:
-            raise VariableTypeUnspecified(f"A variable was not specified.")
+    def take_type(var_type: str, variable: str = ""):
+        """ Get python/numpy equivalent type of makefile variable type.
+
+        :param var_type: The type requested
+        :param variable: The variable name (Optional to generate more explicative errors)
+        :return: The python equivalent of requested variable type
+        """
+
+        recognized_v_types = {
+            "categorical": str,
+            "boolean": str,
+            "numeric": np.float64,
+            "integer": np.int32
+        }
+        if var_type not in recognized_v_types.keys():
+            raise TypeError("Expected user defined variable {v} to have a "
+                            "predefined type, found unrecognized type {t}"
+                            "instead.".format(v=variable, t=var_type))
+        else:
+            return recognized_v_types[var_type]
 
     def add_package(self, package, pack):
         # Add passed package to grammar
