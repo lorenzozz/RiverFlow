@@ -28,13 +28,18 @@ new ResT = ResF
 new Self = np.arange(0, len(ResF))
 new Self2 = np.arange(0, len(ResF))
 new Self3 = np.arange(0, len(ResF))
-
+plot Precipitazione
+plot TemperaturaMedia
+plot TemperaturaMassima
 .sap
+
+
 
 
 .make
 
 plan_file NewFile = EXAMPLESROOT + '/River Height/savefile'
+plan_file TestFile = EXAMPLESROOT + '/River Height/test'
 log_file Logs = EXAMPLESROOT + '/River Height/savefile'
 
 begin plan NewPlan expecting attempt_recovery
@@ -45,15 +50,16 @@ begin plan NewPlan expecting attempt_recovery
     align TemperaturaMedia against Data as date with format %Y-%M-%D
     consider x
 
-    take 90 before x from TemperaturaMassima
-    take 90 before x from TemperaturaMedia
-    take 90 before x from ResF
-    take 90 before x from Precipitazione
+    take 30 before x from TemperaturaMassima
+    take 30 before x from TemperaturaMedia
+    take 30 before x from ResF
+    take 30 before x from Precipitazione
 
-    make ResT the target and take 6 after y from ResT
+    make ResT the target and take 7 after y from ResT
     pair x and target
 }
 end plan
 
-compile NewPlan into NewFile
+split NewPlan into NewFile, TestFile as 50, 50
+compile NewPlan
 log NewPlan into Logs

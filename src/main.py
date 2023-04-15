@@ -1,25 +1,67 @@
 import numpy as np
 import Config
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 __licence__ = 'Comune di Val Sesia, agenzia federale'
 __version__ = '0.1'
 __dependencies__ = ['numpy 1.20', 'tensorflow .', 'matplotlib .']
 
 if __name__ == '__main__':
-    None
 
     make_file = Config.EXAMPLESROOT + "/River Height/savefile.npz"
-    with np.load(make_file) as model:
-        print(model['x'][0], model['y'][0])
-        print(model['x'][1], model['y'][1])
+    test_file = Config.EXAMPLESROOT + "/River Height/test.npz"
+    with np.load(make_file) as model_data:
+        with np.load(test_file) as test_data:
 
-        print(model['x'].shape)
-        print(np.size(model['y'][0]))
+            print("> Training set:", model_data['x'].shape, model_data['y'].shape)
+            print("> Test set:", test_data['x'].shape, test_data['y'].shape)
 
-        model = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(2457, activation='relu'),
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dropout(0.3),
-            tf.keras.layers.Dense(168)
-        ])
+            x = tf.constant([[1, 2, 3], [1,2, 3]])
+
+            var = tf.Variable([1, 2, 3])
+            var.assign([1, 4, 3])
+
+            model = tf.keras.Sequential(
+                [
+                    tf.keras.layers.InputLayer(input_shape=(model_data['x'].shape[1],)),
+                    tf.keras.layers.Dense(100, activation='relu'),
+                    tf.keras.layers.Dropout(rate=0.2),
+                    tf.keras.layers.Dense(100, activation="relu"),
+                    tf.keras.layers.Dropout(rate=0.1),
+                    tf.keras.layers.Dense(100, activation="relu"),
+                    tf.keras.layers.Dense(model_data['y'].shape[1]),
+                ]
+            )
+
+            train_data = model_data['x']
+            train_label = model_data['y']
+            train_ds = tf.data.Dataset.from_tensor_slices(
+                (train_data, train_label)).shuffle(10000).batch(32)
+
+            print(train_ds.cardinality())
+            print(train_ds)
+            model.summary()
+            model.compile(optimizer='adam',
+                          loss=tf.keras.losses.MeanSquaredError(),
+                          metrics=['mean_squared_error'])
+
+            model.fit(train_ds, epochs=15)
+
+            x_test = test_data['x']
+            y_test = test_data['y']
+            model.evaluate(x_test, y_test, batch_size=32)
+
+            g_truth = []
+            p = []
+            for i in range(0, len(test_data['y']), y):
+
+                x_test = np.expand_dims(test_data['x'][i],0)
+                p.append(model.predict(x_test)[0])
+                g_truth.append(test_data['y'][i])
+
+            plt.plot(np.arange(0, len(np.hstack(g_truth))), np.hstack(g_truth), label='ground truth')
+
+            plt.plot(np.arange(0, len(np.hstack(p))), np.hstack(p),  label='predicted')
+            plt.legend()
+            plt.show()
