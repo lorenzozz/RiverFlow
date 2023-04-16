@@ -16,7 +16,7 @@ if __name__ == '__main__':
             test_err = []
             train_err = []
             test_err2 = []
-            for ep_amount in range(10, 15, 5):
+            for ep_amount in range(10, 700, 5):
 
                 # print("> Training set:", model_data['x'].shape, model_data['y'].shape)
                 # print("> Test set:", test_data['x'].shape, test_data['y'].shape)
@@ -30,9 +30,9 @@ if __name__ == '__main__':
                     [
                         tf.keras.layers.InputLayer(input_shape=(model_data['x'].shape[1],)),
                         tf.keras.layers.Dense(100, activation='relu'),
-                        tf.keras.layers.Dropout(rate=0.2),
-                        tf.keras.layers.Dense(100, activation="relu"),
                         tf.keras.layers.Dropout(rate=0.1),
+                        tf.keras.layers.Dense(100, activation="relu"),
+                        tf.keras.layers.Dropout(rate=0.05),
                         tf.keras.layers.Dense(100, activation="relu"),
                         tf.keras.layers.Dense(model_data['y'].shape[1]),
                     ]
