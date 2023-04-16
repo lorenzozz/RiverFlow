@@ -27,10 +27,8 @@ new ResF = load_vec(Value, ',')
 new ResT = ResF
 new Self = np.arange(0, len(ResF))
 new Self2 = np.arange(0, len(ResF))
-new Self3 = np.arange(0, len(ResF))
-plot Precipitazione
-plot TemperaturaMedia
-plot TemperaturaMassima
+new Self3 = np.arange(0, len(ResF)) 
+  
 .sap
 
 
@@ -60,6 +58,6 @@ begin plan NewPlan expecting attempt_recovery
 }
 end plan
 
-split NewPlan into NewFile, TestFile as 50, 50
+split NewPlan into NewFile, TestFile as 60, 40
 compile NewPlan
 log NewPlan into Logs

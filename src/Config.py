@@ -6,6 +6,6 @@ file sections.
 """
 
 SORCEROOT = os.getcwd().replace('\\', '/')
-EXAMPLESROOT = os.getcwd().replace('\\', '/') + '/../examples'
+EXAMPLESROOT = os.getcwd().replace('\\', '/') + '/examples'
 URLROOT = os.getcwd().replace('\\', '/')
-RIVERDATAROOT = os.getcwd().replace('\\', '/') + '/../RiverData'
+RIVERDATAROOT = os.getcwd().replace('\\', '/') + '/RiverData'
