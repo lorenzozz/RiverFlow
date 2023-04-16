@@ -16,32 +16,43 @@ class FileDeclGetter:
 
     @staticmethod
     def get_name_and_path(statement: str, file_tok: str):
+        """ Get name and path of file declared according to standard syntax
+        <file_tok> <file_name> = <file_path>
+        File path can be any python expression that duck types to a string.
+        Note that the only variables allowed inside a filepatch expression are those
+        defined in the glob_env environment, e.g. the Config dictionary
 
+        :param statement: The file declaration statement
+        :param file_tok: The specific file token used in statement
+        :return: both the file name and file path declared by user.
+        """
         if file_tok not in statement:
-            raise BadFormatStyle("", "Missing source_file token at line " + statement)
+            raise BadFormatStyle("", "Missing {f_tok} token inside statement {line}".format(
+                f_tok=file_tok, line=statement))
 
         path_statement = statement.split('=')[1].strip()
         file_path = eval(path_statement, FileDeclGetter.glob_env)
-        if not isinstance(file_path, str):
+        if not isinstance(file_path, str) and not hasattr(file_path, '__str__'):
             raise IncorrectFilePathExpr(file_path)
 
         file_label = statement.split(file_tok, 1)[1].split('=')[0].strip(' ')
 
-        return file_label, file_path
+        return file_label, file_path.__str__()
 
 
 class DataFormatReader:
-    def __init__(self, format_path):
+    def __init__(self, makefile_path):
         """  Initialize DataFormatReader object.
         Fills out format_path as input path, rows as the rows of
         the input file and various state variables to parse expressions
         in action section.
+        :param: makefile_path: The path to the target makefile
         :return: None """
-        self.format_path = format_path
+        self.format_path = makefile_path
         try:
-            self.data = open(format_path, "r")
+            self.data = open(makefile_path, "r")
         except Exception:
-            raise IncorrectFormatFile(format_path)
+            raise IncorrectFormatFile(makefile_path)
         self.rows = None
 
         # Note the difference. files_arglists is a dictionary where each key is a
@@ -59,29 +70,33 @@ class DataFormatReader:
         self.var_vector = VariableVectorManager()
 
     def create_data(self):
-        """ Read data from format path and store lines into self.Rows
-        :return: None """
+        """ Read data from format path and store lines into self.rows
+        """
         self.rows = self.data.readlines()
+
         # Exclude blank lines and whole-line comments from interpretation
-        self.rows = [r for r in self.rows if not str.isspace(r) and not r[0] == '#']
+        self.rows = [
+            r for r in self.rows
+            if not str.isspace(r) and
+            not r[0] == '#'
+        ]
 
     def parse_part_one(self):
-        """ Parse first part of format description file into a list of input files along
-        with their corresponding format string
-        :return: None """
-
-        # Note: as format is required to have a blank newline before start of
-        # Part 2, we can find the index of the empty element '\n' inside self.rows
-        # to find where the declaration section ends
+        """ Parse first part of format description file into a list of
+        input files along with their corresponding format string
+        :return: None
+         """
 
         if '.decl\n' in self.rows:
-            decl_section = [r for r in self.rows[1:self.rows.index('.res\n')] if r != '\n']
+            decl_section = [r for r in self.rows[1:self.rows.index('.res\n')]]
             if len(decl_section) % 2 != 0:
-                raise BadFormatStyle(self.format_path, "Bad pairing of declarations: " +
-                                     "mismatched pair in declaration section ")
+                raise BadFormatStyle(self.format_path,
+                                     "Bad pairing of declarations: expected"
+                                     "each declared file to have a format string, got a " +
+                                     "mismatched pair in declaration section instead")
 
-            # file<id> <Path> and arg_list {ID1}...{ID2} are paired, take even
-            # and odd element of declaration section
+            # source_file <Fileid> =  <Path> and
+            # {ID1}...{ID2} are paired, thus take even and odd element of declaration section
             for file_token, arg_list in zip(decl_section[::2], decl_section[1::2]):
                 source_line = str(self.rows.index(file_token))
                 arg_list = arg_list.strip('\n')
@@ -107,14 +122,15 @@ class DataFormatReader:
 
                 # No variable can be redeclared.
                 if any(i in self.variables for i in variable_names):
-                    raise BadFormatStyle(self.format_path, f"Label already defined was redeclared"
-                                                           " at line " + source_line)
+                    raise BadFormatStyle(self.format_path,
+                                         f"Label already defined was redeclared"
+                                         " at line {}".format(source_line))
 
-                self.variables.update({name: "Not yet defined" for name in variable_names})
+                self.variables.update({name: "N/A" for name in variable_names})
 
         else:
             raise MissingSection(self.format_path, "Incorrect separation of declaration" +
-                                 " section in format file (missing .decl?) ")
+                                 " section in format file (missing .decl section?) ")
 
     def create_variable_vectors(self):
         """ Create vectors from specified variables.
@@ -482,7 +498,7 @@ class DataFormatReader:
 
         line_peek_amt = 2
 
-        def peek_lines(f):
+        def _peek_lines(f):
             # Peek into file without incrementing file pointer
             # to not lose any data point.
             nonlocal line_peek_amt
@@ -500,7 +516,7 @@ class DataFormatReader:
 
             # Sniff over a few lines of target file, if it contains a header
             # glance over it
-            if csv.Sniffer().has_header(peek_lines(csv_file)):
+            if csv.Sniffer().has_header(_peek_lines(csv_file)):
                 lines.__next__()
 
             def _parse_csv_line(format_string: list[str], line: str):

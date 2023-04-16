@@ -3,7 +3,7 @@ source_file MeteoFile = EXAMPLESROOT + '/River Height/LOZZOLO_Dati.csv'
 {Data};{Precipitazione};{TemperaturaMedia};{TemperaturaMassima};{TemperaturaMinima};{Velocita};{Raffica};{Durata};{Settore};{TempoPermanenza}
 
 source_file RiverFile = EXAMPLESROOT + '/River Height/sesia-hourly-packed.csv'
-{DateTarg};{Value}
+{DateTarg};{Value}ì
 .res
 
 Data: categorical

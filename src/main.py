@@ -14,8 +14,9 @@ if __name__ == '__main__':
     with np.load(make_file) as model_data:
         with np.load(test_file) as test_data:
             test_err = []
-
-            for ep_amount in range(10, 100):
+            train_err = []
+            test_err2 = []
+            for ep_amount in range(10, 15, 5):
 
                 # print("> Training set:", model_data['x'].shape, model_data['y'].shape)
                 # print("> Test set:", test_data['x'].shape, test_data['y'].shape)
@@ -58,7 +59,10 @@ if __name__ == '__main__':
                 # print(losses)
 
                 test_err.append(losses[0]-float(hist.history['mean_squared_error'][-1]))
+                train_err.append(hist.history['mean_squared_error'][-1])
+                test_err2.append(losses[0])
                 # print(test_err)
+
             g_truth = []
             p = []
             for i in range(0, len(test_data['y'])):
@@ -76,5 +80,8 @@ if __name__ == '__main__':
             print(test_err)
             plt.figure()
 
-            plt.plot(test_err)
+            plt.plot( np.arange(0, len(train_err))*5, train_err,label='Error at final epoch for training set')
+            plt.plot(np.arange(0, len(train_err))*5,test_err2, label='Error at final epoch for testing set')
+            plt.plot( np.arange(0, len(train_err))*5,test_err,label='Difference between test and training error')
+            plt.legend()
             plt.show()
