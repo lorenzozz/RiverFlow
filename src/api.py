@@ -1,3 +1,17 @@
+"""
+Support module to request satellite data from the NASA sat-data API.
+
+LICENCE: NASA does not indemnify nor hold harmless users of NASA material,
+ nor release such users from copyright infringement, nor grant exclusive
+ use rights with respect to NASA material.
+
+NASA material is not protected by copyright within the United States, unless noted.
+If copyrighted, permission should be obtained from the copyright owner prior to use.
+If not copyrighted, NASA material may be reproduced and distributed without further
+ permission from NASA.
+
+ """
+
 import shutil
 import requests
 
@@ -9,9 +23,6 @@ from dateutil.rrule import rrule, DAILY
 
 import Config
 
-"""
-Support module to request satellite data from the NASA sat-data API
-"""
 
 REQ_TIME = '2023-03-24T00:00:00'
 SAT_REQ_URL = 'https://gibs-c.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?'
@@ -94,4 +105,4 @@ def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[
 
 
 if __name__ == '__main__':
-    populate_range((2022, 2022), (1, 2), (1, 15), verbose=True, flush_cache=True)
+    _ = None

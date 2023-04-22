@@ -1,4 +1,6 @@
 import numpy as np
+
+
 # from Utils import None
 
 
@@ -91,6 +93,84 @@ def vec_load(x, sep: str, enclosed=True):
     """
     d = np.array([np.fromstring(s[1:-1] if enclosed else s, float, sep=sep) for s in x])
     return d
+
+
+def vec_zavadskas(x, verbose=False):
+    """
+    Computes the Zavadskas-Turskis normalization on the
+    target vector. Each sample is normalized as follows.
+
+    x_i' = log(x_i) / sum n=0 to n=N of log(x_n)
+    :param x: the target variable
+    :param verbose: control normalization output to console
+    :return: the normalized vector
+    """
+
+    logarithmic = np.log(x)
+    norm = np.sum(logarithmic)
+
+    logarithmic = logarithmic / norm
+    if verbose:
+        print(f"Norm:{norm}")
+
+    return logarithmic
+
+
+def vec_max_linear(x, verbose=False):
+    """ Computes the maximum linear normalization of x.
+    The vector is normalized as follows:
+        x_i' = (x_i) / max(X)
+
+        :param x: the target vector
+        :param verbose: control output to console (print divisor)
+        :return: the normalized vector
+    """
+    stretched = x.reshape(1, np.size(x))[0]
+    lin_max = np.max(stretched)
+
+    ret = x / lin_max
+    if verbose:
+        print(f"Max:{lin_max}")
+    return ret
+
+
+def vec_zscore(x, verbose=False):
+    """ Performs z-score normalization on the target vector. The vector is normalized
+    as follows:
+
+    x_i = (x_i' - mean(X)) / std(X)
+
+    :param x: the target vector
+    :param verbose: control output to console
+    :return: the normalized vector
+    """
+    stretched = x.reshape(1, np.size(x))[0]
+    std = np.std(stretched)
+    mean = np.mean(stretched)
+
+    ret = (x - mean) / std
+    if verbose:
+        print(f"Std:{std}, Mean{mean}")
+    return ret
+
+
+def vec_profile(x: np.ndarray):
+    """
+    Outputs various info about the requested data.
+    :param x: The target vector
+    :return: No explicit return, output to console
+    """
+    rsp = x.reshape((1, np.size(x)))[0]
+    print(">Count:", np.size(rsp))
+    print(">Uniq:", len(set(list(rsp))))
+    print(">Range:?")
+    print(">Mean:", np.mean(rsp))
+    print(">Min:", np.min(rsp))
+    print(">Max:", np.max(rsp))
+    print(">Median:", np.median(rsp))
+    print(">Std:", np.std(rsp))
+
+    return 0
 
 
 def vec_add_noise(x, distribution, *args):

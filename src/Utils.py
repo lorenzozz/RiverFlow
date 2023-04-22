@@ -217,3 +217,4 @@ if __name__ == '__main__':
 
     _check_file_for_missing_days(EXAMPLESROOT + '/River Height/sesia-hourly-packed.csv',
                                  '{Date};{Garbage}', '{year:04}-{month:02}-{day:02}', verbose=True)
+

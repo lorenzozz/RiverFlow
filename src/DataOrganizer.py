@@ -533,7 +533,6 @@ class DataFormatReader:
                 if not format_string[-1]:
                     parsed_data.append(line)
                 return parsed_data
-
             data = [
                 _parse_csv_line(format_list, ';'.join(line))
                 for line in lines

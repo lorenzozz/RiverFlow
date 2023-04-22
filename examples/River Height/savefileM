@@ -1,5 +1,5 @@
 > Changing field error to attempt_recovery
-> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/savefile', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/test']
+> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/savefileM', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/testM']
 > Changing field proportions to [60, 40]
 > Generated 321 data points from input configuration
 > Non target variables:['TemperaturaMassima', 'Precipitazione', 'ResF', 'TemperaturaMedia'], Target variables: ['ResT']

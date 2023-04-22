@@ -9,3 +9,4 @@ SORCEROOT = os.getcwd().replace('\\', '/')
 EXAMPLESROOT = '/'.join(SORCEROOT.split('/')[:-1]) + '/examples'
 URLROOT = os.getcwd().replace('\\', '/')
 RIVERDATAROOT = os.getcwd().replace('\\', '/') + '/RiverData'
+

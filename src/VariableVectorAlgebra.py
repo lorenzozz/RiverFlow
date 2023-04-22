@@ -131,6 +131,10 @@ class VariableVectorManager:
             "one_hot_encode": vec_one_hot,
             "stack": vec_stack,
             "load_vec": vec_load,
+            "z_score":  vec_zscore,
+            "max_linear": vec_max_linear,
+            "zavadskas": vec_zavadskas,
+            "profile": vec_profile,
 
             # Local functional data
 
