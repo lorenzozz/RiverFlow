@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Iterable, Type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.rrule import rrule, DAILY
 from Config import *
 from DataOrganizer import DataFormatReader  # Csv naive parsing
@@ -133,7 +133,7 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, cas
                     print(f"> Missing datapoint at date {curr_date}")
 
                 past_date_ind = [date[date_i] for date in trim_data].index(curr_date)
-                pad_missing_into_day(curr_day_data, trim_data[past_date_ind:past_date_ind+len(curr_day_data)])
+                pad_missing_into_day(curr_day_data, trim_data[past_date_ind:past_date_ind + len(curr_day_data)])
 
             grouped_data.append([curr_date, curr_day_data])
             curr_date = d_p[date_i]
@@ -149,33 +149,58 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, cas
     _save_file_from_format(dest_path, ['', 'Date', ';', target_var, ''], grouped_data)
 
 
-def _check_series_for_missing_days(data: list, date_format: str) -> list:
+def find_first_before(time_series: list, date_format: str, date):
     """
+    Finds the occurrence of the day before a value in a time_series.
 
-    :param data:
-    :param date_format:
-    :return:
+    :param time_series: The target data
+    :param date_format: The date format in the time series
+    :param date: The date in question
+    :return: The index in the time_series
+    :raises: IndexError when there is no such day.
     """
-    a = datetime.strptime(data[0], '%Y-%m-%d')
-    b = datetime.strptime(data[-1], '%Y-%m-%d')
+    prev_day = date - timedelta(days=1)
+    time_series_rep = date_format.format(
+        day=prev_day.day,
+        month=prev_day.month,
+        year=prev_day.year
+    )
+    missing_date_rep = date_format.format(
+        day=date.day,
+        month=date.month,
+        year=date.year
+    )
+    return time_series.index(time_series_rep), missing_date_rep
+
+
+def check_series_for_missing_days(data: list, date_format: str) -> list:
+    """
+    Checks a time series for missing days in the sequence. Takes as input
+    a vector representing all dates in the series.
+
+    :param data: The target time series' dates.
+    :param date_format: A format for the date in the time series.
+    :return: A list containing all missing dates in the time series.
+    """
+    d_form = '%d/%m/%Y'
+    a = datetime.strptime(data[0], d_form)
+    b = datetime.strptime(data[-1], d_form)
 
     missing = []
     for time_date in rrule(DAILY, dtstart=a, until=b):
         # Get representation of day according to
         # date format
         day_rep = date_format.format(
-                day=time_date.day,
-                month=time_date.month,
-                year=time_date.year
+            day=time_date.day,
+            month=time_date.month,
+            year=time_date.year
         )
-
         if day_rep not in data:
             missing.append(time_date)
-
     return missing
 
 
-def _check_file_for_missing_days(file_path: str, format_str: str, date_format: str, verbose: bool = False) -> list:
+def check_file_for_missing_days(file_path: str, format_str: str, date_format: str, verbose: bool = False) -> list:
     """
     Checks for missing days inside a time series. Expects at least
     one field inside the format string to be labeled 'Date'.
@@ -199,7 +224,7 @@ def _check_file_for_missing_days(file_path: str, format_str: str, date_format: s
                         "no such variable instead.")
 
     date_i = format_list[1::2].index('Date')
-    missing_days = _check_series_for_missing_days(
+    missing_days = check_series_for_missing_days(
         [
             # For each data point, get the corresponding date as
             # expressed in the format string.
@@ -214,7 +239,5 @@ def _check_file_for_missing_days(file_path: str, format_str: str, date_format: s
 
 
 if __name__ == '__main__':
-
-    _check_file_for_missing_days(EXAMPLESROOT + '/River Height/sesia-hourly-packed.csv',
-                                 '{Date};{Garbage}', '{year:04}-{month:02}-{day:02}', verbose=True)
-
+    check_file_for_missing_days(EXAMPLESROOT + '/River Height/sesia-hourly-packed.csv',
+                                '{Date};{Garbage}', '{year:04}-{month:02}-{day:02}', verbose=True)

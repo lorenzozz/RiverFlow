@@ -1,9 +1,8 @@
-Data;Precipitazione dalle 9 alle 9 ( mm );Precipitazione dalle 0 alle 0 ( mm );Temperatura media ( °C );Temperatura massima ( °C );Temperatura minima ( °C );Velocita' media ( m/s );Raffica ( m/s );Durata Calma ( min );Settore Prevalente;Tempo Permanenza ( min );
+Data;Precipitazione dalle 9 alle 9 ( mm );Precipitazione dalle 0 alle 0 ( mm );Temperatura media ( ï¿½C );Temperatura massima ( ï¿½C );Temperatura minima ( ï¿½C );Velocita' media ( m/s );Raffica ( m/s );Durata Calma ( min );Settore Prevalente;Tempo Permanenza ( min );
 01/10/2001;;;15.9;;;1.6;;110;;;
 02/10/2001;0.0;0.0;16.2;;;1.3;;280;;;
 03/10/2001;0.0;0.0;16.6;;;1.7;;110;;;
 04/10/2001;8.4;0.2;15.9;;;1.9;;30;;;
-05/10/2001;0.0;8.2;;;;;;;;;
 06/10/2001;0.2;;17.0;;;1.8;;110;;;
 07/10/2001;7.2;6.6;14.8;;;2.3;;0;NNE;520;
 08/10/2001;39.8;36.2;15.6;;;2.3;;0;NNE;400;
