@@ -1,3 +1,4 @@
+# imports
 import copy
 import random
 import typing
@@ -6,10 +7,44 @@ import numpy as np
 import tensorflow as tf
 import Utils
 
+from abc import abstractmethod
 from Config import *
 from DataOrganizer import DataFormatReader
 from matplotlib import pyplot as plt
 from typing import Iterable
+
+DEFAULT_VERTICAL_WINDOW_SIZE = 14
+DEFAULT_DENSITY_VALUE = 0.7
+
+
+class ToNumpyMasked:
+    def __init__(self, v, allowed):
+        """ Create masked vector. Only a subset defined by allowed
+        can be modified. """
+        self._x = v
+        self._allowed = allowed
+
+    def get_allowed(self):
+        """ Get allowed elements from original vector. """
+        return np.array(self._x)[self._allowed]
+
+    def mask(self, v):
+        return np.array(v)[self._allowed]
+
+    def update(self, quantity):
+        """ Update masked vector with quantity of mask size. """
+        for i, q in zip(self._allowed, quantity):
+            self._x[i] = q
+
+    @property
+    def python_rep(self):
+        """ Get original representation. """
+        return self._x
+
+    @python_rep.setter
+    def python_rep(self, v):
+        """ Change representation """
+        self._x = v
 
 
 class FormatParser:
@@ -57,6 +92,351 @@ class FormatParser:
         return cls._multi_split(string, splits)[1::2]
 
 
+class NoiseGenerator:
+    @staticmethod
+    def zero_with_p(data_set, p, val=0):
+        """ Zero out elements at random. """
+        for i in range(0, len(data_set)):
+            for j in range(0, len(data_set[0])):
+                if (random.randint(1, 100)) / 100 < p:
+                    data_set[i][j] = val
+
+    @staticmethod
+    def add_noise_samples(dataset, amount):
+        """ Sample with replacement and add noise amount times. """
+        taken = copy.deepcopy(dataset)
+        for _ in range(amount):
+            a = random.choice(dataset)
+            taken.append(a)
+            a = a + np.random.randn(len(dataset[0]))
+            dataset.append(a)
+
+        return taken
+
+    @staticmethod
+    def add_zero_samples(dataset, amount, val=0):
+
+        taken = copy.deepcopy(dataset)
+        for _ in range(amount):
+            a = random.choice(dataset)
+            taken.append(a)
+            for i in range(0, len(a)):
+                p = random.randint(0, 10)
+                if random.randint(0, 10) > p:
+                    a[i] = val
+            dataset.append(a)
+
+        return taken
+
+
+class ImputationModel:
+    @abstractmethod
+    def __init__(self, *args, **kwargs) -> None:
+        """ Create new imputation model """
+        pass
+
+    @abstractmethod
+    def __str__(self) -> str:
+        """ Get name of model """
+        pass
+
+    @abstractmethod
+    def __call__(self, d_point, sentinel) -> typing.Any:
+        """ Make imputation on data """
+        pass
+
+    @abstractmethod
+    def get_error(self, fca, test_set) -> float:
+        """ Get model error on source """
+        pass
+
+
+@typing.final
+class HorizontalZeroImputationModel(ImputationModel):
+    def __str__(self) -> str:
+        return "Zero imputation on row."
+
+    def __init__(self, _fca, allowed, _hypers):
+        self._local_mask = ToNumpyMasked(None, allowed)
+
+    def __call__(self, data_row, sentinel):
+        """ Zero out missing values in a datapoint """
+        # Note that numpy casts to string all elements to make
+        # an array homogeneous
+        data: np.array = self._local_mask.mask(data_row)
+        data[data == sentinel] = 0.0
+        self._local_mask.python_rep = data_row
+        self._local_mask.update(data)
+        return self._local_mask.python_rep
+
+    def get_error(self, fca, test_set) -> float:
+        return 0
+
+
+@typing.final
+class VerticalZeroImputationModel(ImputationModel):
+    def __str__(self) -> str:
+        return "Vertical Zero Imputation"
+
+    def __init__(self, _fca, __allowed, ___hypers):
+        """ No initialization is required. """
+        pass
+
+    def __call__(self, _datapoint, __sentinel):
+        """ Return zero for each missing value. """
+        return 0.0
+
+    def get_error(self, fca, test_set) -> float:
+        return 0
+
+
+@typing.final
+class VerticalWeightedAverageModel(ImputationModel):
+
+    def __str__(self) -> str:
+        return "Vertical weighted average"
+
+    def __init__(self, _fca, __allowed, hypers):
+        """
+        Initialize a vertical weighted average padding model.
+
+        :param _fca: not available
+        :param __allowed: same as above
+        :param hypers: Hyperparameters such as distance between days
+            in the time series.
+            Any function provided by the user must go under the label
+            'distance' and must have the following signature
+
+            def user_distance(index_1, index_2, x_1, x_2)
+                ...
+                return float(...)
+
+            If no window is specified (as label 'w'), a default
+            value of the vertical window is assumed.
+        """
+
+        def _def_distance(i_1, i_2, _x_1, _x_2):
+            return np.abs(i_1 - i_2)
+
+        self._distance = _def_distance
+        if hypers and 'distance' in hypers:
+            self._distance = hypers['distance']
+        if not hypers or 'w' not in hypers:
+            self._w = DEFAULT_VERTICAL_WINDOW_SIZE
+        else:
+            self._w = hypers['w']
+
+    def __call__(self, data_row, sentinel):
+        """
+        Get weighted average vertical imputation.
+
+        :param data_row: The target data row from the dataset
+        :param sentinel: The sentinel value for missing features
+        :return: The resulting imputed feature
+        """
+        d = np.array(data_row)
+        indexes = np.flatnonzero(np.array(data_row) != sentinel) - self._w
+        weights = [1 / (self._distance(0, i, data_row[self._w - 1], data_row[i + self._w]) + 1e-7) for i in indexes]
+        norm = np.sum(weights) + 1e-7
+        res = np.dot(weights, d[d != sentinel].astype(float)) / norm
+        return res
+
+    def get_error(self, fca, test_set) -> float:
+        return 0
+
+
+@typing.final
+class HorizontalKNNModel(ImputationModel):
+
+    def __init__(self, fca, allowed, hypers):
+        """
+        Initialize a horizontal k-nearest-neighbors padding model.
+
+        :param fca: The data to compare against new samples
+        :param allowed: The features which it is allowed to alter
+        :param hypers: Hyperparameters such as k and eta.
+            if no k is provided, a shallow search for a good enough
+            k is autonomously executed.
+        """
+
+        # Euclidean distance (Minkowski 2)
+        def _def_distance(dp_1, dp_2):
+            return np.linalg.norm(np.array(dp_1) - np.array(dp_2))
+
+        self._local_mask = ToNumpyMasked(None, allowed)
+        self._distance = _def_distance
+        if hypers and 'distance' in hypers:
+            self._distance = hypers['distance']
+
+        self._pool = np.array([self._local_mask.mask(dp) for dp in fca])
+
+        if not hypers or 'k' not in hypers:
+            self._k = self._get_best_k()
+        else:
+            self._k = hypers['k']
+
+    def __call__(self, data_row, sentinel):
+        """
+        Get weighted average vertical imputation.
+        The actual prediction is computed with a weighted and
+        normalized k-nearest neighbor algorithm. That is, each
+        missing row is computed as
+
+        m_hat = 1 / (sum of weights) * sum_k of weights_k*neighbor_k
+        where the candidates ore the k nearest neighbors.
+        Note that features not missing are not altered by this
+        imputation.
+
+        :param data_row: The target data row from the dataset
+        :param sentinel: The sentinel value for missing features
+        :return: The resulting imputed feature
+        """
+
+        def _masked_euclidean(x_1, x_2):
+            non_missing_samples = np.nonzero(x_1 != sentinel)
+            return np.linalg.norm(x_1[non_missing_samples], x_2[non_missing_samples])
+
+        masked_dp = self._local_mask.mask(data_row)
+        prediction = self._run_knn(self._pool, masked_dp, _masked_euclidean)
+
+        for i in range(0, len(masked_dp)):
+            if masked_dp is not sentinel:
+                prediction[i] = masked_dp[i]
+
+        self._local_mask.python_rep = data_row
+        self._local_mask.update(prediction)
+
+        return self._local_mask.python_rep
+
+    def _run_knn(self, fca, datapoint, distance: typing.Callable):
+        """
+        Runs the KNN algorithm on the complete datapoints in fca
+        wrt the datapoint provided as argument, using the distance
+        metric passed as argument.
+
+        Returns the actual weighted average, thus it's a workhorse
+        function for call() (and _get_best_k)
+
+        :param fca: The dataset of complete values
+        :param datapoint: The value to impute
+        :param distance: The distance metric employed
+        :return: The computed value to impute
+        """
+
+        def _get_neighbours():
+            dists = [distance(datapoint, sample) for sample in fca]
+            epsilon = 1e-5
+
+            def _sort_together(l1, l2):
+                # l1 and l2 has to be numpy arrays
+                idx = np.argsort(l1).astype(int)
+                return l1[idx], l2[idx]
+
+            dists_sort, index_sort = _sort_together(np.array(dists), np.arange(0, len(dists)))
+            weights = 1 / (np.array(dists_sort[:self._k]) + epsilon)
+            print("Weights: ", weights)
+
+            return weights, dists_sort, index_sort
+
+        # Compute weighted and normalized sum
+        ws, ds, indexes = _get_neighbours()
+        norm = np.sum(ws)
+        candidates = np.array(fca)[indexes[:k]]
+        new_x = candidates[0] * ws[0]
+        for i in range(1, self._k):
+            new_x += candidates[i] * ws[i]
+        new_x /= norm
+
+        return new_x
+
+    def _get_best_k(self):
+        """
+        Shallow heuristic to compute a good enough value of k.
+        For each time step, k is incremented linearly by
+
+            k_t+1 = alpha*k + beta
+
+        If the average error over cross validation batches is
+        greater than the average error of the previous value for k,
+        a mean value between the previous k and the current k
+        is taken according to the equation
+
+            k_hat = k_t + eta * (err_t / err_t_p_1) * (k_t_p_1 - k_t)
+
+        for numerical purposes the denominators are corrected with an
+        epsilon factor of 1.e-7
+        :return: A good value of k
+        """
+        k_t = k_t_p_1 = 5
+        error_t_p_1 = 0
+        eta, alpha, beta = 0.75, 1.5, 0.0
+        upper_bound = 120
+
+        # Not enough data to conduct search.
+        if len(self._pool) < 100:
+            # Set k = floor [ len(dataset) / 10 ]
+            return np.floor(len(self._pool) / 10)
+        # Else prepare for cross-validation testing
+
+        batches = np.array_split(self._pool, 5)
+        print("First batch: ", batches[0][:10])
+        error_t = np.inf
+        while error_t >= error_t_p_1 and k_t_p_1 < upper_bound:
+            error_t = error_t_p_1
+            k_t = k_t_p_1
+            test_batch = batches[random.randint(0, 4)]
+            avg_batches = [batches[i] for i in range(0, 5) if i != test_batch]
+
+            k_t_p_1 = np.floor(alpha * k_t + beta)
+            self._k = k_t_p_1
+            errors = [self.get_error(batch, test_batch) for batch in avg_batches]
+            print("Errors: ", errors)
+            error_t_p_1 = np.sum(errors) / len(avg_batches)
+
+        final_k = np.ceil(k_t + eta * (error_t / error_t_p_1 + 1.e-4) * (k_t_p_1 - k_t))
+
+        return final_k
+
+    def get_error(self, fca, test_set) -> float:
+        """
+        Get the MSE of the test set by randomly adding noise
+        to it and verifying the degree of accuracy induced by
+        imputing with training set given by full cases provided.
+
+        :param fca: The complete training samples.
+        :param test_set: The  complete samples to test.
+        :return: the MSE of the test.
+        """
+        n = len(test_set)
+        artificial_sent = -1050325
+
+        def _induced_euclidean(x_1, x_2):
+            print("Orig sample:", x_1, "Asked: ", x_2)
+            x_1 = np.array(x_1).astype(np.float32)
+            print("x_1", x_1)
+            print("Nonsentinel: ", x_1 != artificial_sent)
+            non_missing_samples = np.flatnonzero(x_1 != artificial_sent)
+            print("Non missing:", non_missing_samples)
+            return np.linalg.norm(np.array(x_1)[non_missing_samples], x_2[non_missing_samples])
+
+        noisy_set = copy.deepcopy(test_set).astype(float)
+        NoiseGenerator.zero_with_p(noisy_set, 0.3)
+        print("Noisy: ", noisy_set)
+        results = []
+        for test_dp in test_set:
+            results.append(self._run_knn(fca, test_dp, distance=_induced_euclidean))
+
+        mse = 0.0
+        for g_truth, predicted in zip(test_set, noisy_set):
+            mse += (np.square((g_truth - predicted))).mean()
+        print("MSE: ", mse)
+        del noisy_set
+        return mse / n
+
+    def __str__(self) -> str:
+        return "Horizontal KNN model"
+
+
 class Dataset:
     def __init__(self,
                  init_source: tuple[str, str] = None):
@@ -82,7 +462,7 @@ class Dataset:
             self._data_sources = []
 
     def load_plan(self, path: str, unroll_window=False, unroll_specs=None):
-        NotImplemented
+        pass
 
     def load_source(self, path: str, format_string: str, **kwargs):
         """
@@ -175,8 +555,8 @@ class Dataset:
     def flush_sources(self):
         """
         Reset Dataset to an empty dataset. Attribute other than
-        _variables and _data_sources are not altered during the flush
-         as they can only be set once.
+        self._variables and _data_sources are not altered during
+         the flush as they can only be set once.
         """
         self._variables = []
         self.delete()
@@ -223,9 +603,10 @@ class Dataset:
 
     def make_rectangular(self, pad_alg_specs=None,
                          to_obj: dict[str, typing.Callable] = None,
-                         horiz: str = 'best', vert: str = 'best',
-                         hyper: dict = None,
-                         us_def_cast : typing.Callable = None):
+                         horizontal_padding_methods: str = 'best',
+                         vertical_padding_methods: str = 'best',
+                         hyper_parameters: dict = None,
+                         user_default_cast: typing.Callable = None):
         """
         Make dataset 'rectangular' by padding any missing datapoints.
         Any sub-dataset containing missing datapoints must be tagged
@@ -255,12 +636,15 @@ class Dataset:
         as keys into the hyper dictionary. Note that most hyperparameters
         are regulated internally autonomously.
 
-        :param pad_alg_specs: The specific of the imputation algorithm as in the docs.
-        :param to_obj: The routines mapping strings to the objects. Defaults to
-            casting to float.
-        :param horiz: The horizontal imputation methods applied.
-        :param vert: The vertical imputation methods applied.
-        :param hyper: The optional hyperparameters inputted by hand.
+        :param user_default_cast: An optional user defined default
+            to casting method
+        :param pad_alg_specs: The specific of the imputation algorithm
+            as in the docs.
+        :param to_obj: The routines mapping strings to the objects.
+            Defaults to casting to float.
+        :param horizontal_padding_methods: The horizontal imputation methods applied.
+        :param vertical_padding_methods: The vertical imputation methods applied.
+        :param hyper_parameters: The optional hyperparameters inputted by hand.
         :return: No explicit returns but alters dataset permanently.
         """
 
@@ -286,15 +670,6 @@ class Dataset:
                                          "is illegal. Please specify a date format.")
                     self._pad_missing_days(src_spec, vs, src)
 
-        def _default_cast(el):
-            return float(el)
-
-        _def_cast = None
-        if not us_def_cast:
-            _def_cast = _default_cast
-        else:
-            _def_cast = us_def_cast
-
         for src in incomplete_srcs:
             vs = self._variables[self._data_sources.index(src)]
             specs = self._sources_specs[self._data_sources.index(src)]
@@ -304,18 +679,216 @@ class Dataset:
                 # Ignore date from casting to real values.
                 ignore_vs.append(specs['time_series'])
 
+            missing_sent = specs['has_missing_values']
+            # self._cast_variables(src)
+
             for variable in filter(lambda f: f not in ignore_vs, vs):
-                # User has specified a custom conversion
+                _def_cast = None
+                missing_sent = specs['has_missing_values']
+
                 if variable in to_obj:
-                    cast = to_obj[variable]
+                    print("Var has")
+                    us_specified = to_obj[variable]
+
+                    def cast(v):
+                        return us_specified(v) if v is not missing_sent else v
+
                 else:
-                    # Else use default casting to float.
-                    cast = _def_cast
+
+                    def _default_cast(el):
+                        return float(el) if el is not missing_sent else el
+
+                    if not user_default_cast:
+                        cast = _default_cast
+                    else:
+                        # Else use default casting to float.
+                        cast = user_default_cast
 
                 v_i = vs.index(variable)
-                print(v_i)
-                map(lambda dp: cast(dp[v_i]), src)
-        print(incomplete_srcs[:5])
+                for dp in src:
+                    dp[v_i] = cast(dp[v_i])
+
+            def _is_complete(datapoint):
+                return missing_sent not in datapoint
+
+            full_case_analysis = list(filter(_is_complete, src))
+
+            allowed_features = [i for i in range(0, len(vs)) if vs[i] not in ignore_vs]
+            if 'time_series' in specs:
+                # Ignore date from casting to real values.
+                self.time_series_impute(
+                    src=src,
+                    full_case_analysis=full_case_analysis,
+                    # These arguments are provided by default if not
+                    # specified by user
+                    missing_sentinel=missing_sent,
+                    pad_alg_specs=pad_alg_specs,
+                    horizontal_padding_methods=horizontal_padding_methods,
+                    vertical_padding_methods=vertical_padding_methods,
+                    hyper_parameters=hyper_parameters,
+                    allowed_features=allowed_features
+                )
+                print("Result: \n\n", src[:10])
+            else:
+                # pad horizontally only
+                NotImplemented
+
+    def _get_imputation_models(self, full_case_analysis: list[list[float]],
+                               allowed: list[int],
+                               specifics: list[typing.Any]):
+        """
+        Build the imputation models as required. Rounds of training
+        are conducted if the models selected include supervised training
+        models.
+
+        :param full_case_analysis: The data containing no missing value.
+        :param allowed: The allowed modifiable variable in a data row.
+        :param specifics: Specifics of the algorithm.
+        :return: both horizontal and vertical imputation callable models.
+        """
+
+        pad_s, h_methods, v_methods, hypers = specifics
+
+        def _build_new_from_dict(dic, key, fail_msg):
+            try:
+                model = dic[key]
+                model = model.__new__(model)
+                model.__init__(full_case_analysis, allowed, hypers)
+            except Exception as runtime_exc:
+                raise ValueError(fail_msg + "original exception: "
+                                 + runtime_exc.__str__())
+
+        if 'best' in h_methods:
+            NotImplemented
+            # h_model = get_best_imputation(...)
+        else:
+            h_model = _build_new_from_dict(
+                {'dae': None,
+                 'knn': HorizontalKNNModel,
+                 'zero': HorizontalZeroImputationModel
+                 }, h_methods,
+                "Unrecognized imputation method inside "
+                "manually specified imputation methods: "
+                " {method} not recognized".format(method=h_methods))
+            """
+            try:
+                h_model = {'dae': None,
+                           'knn': None,
+                           'zero': HorizontalZeroImputationModel
+                           }[h_methods]
+                h_model = h_model.__new__(h_model)
+                h_model.__init__(full_case_analysis, allowed, hypers)
+            except Exception as GenericException:
+                raise ValueError("Unrecognized imputation method inside "
+                                 "methods manually specified caused exception"
+                                 "{exc}: {method} not recognized".format(
+                    method=h_methods, exc=GenericException))
+            """
+        if 'best' in v_methods:
+            NotImplemented
+            # h_model = get_best_imputation(...)
+        elif 'wa' in v_methods:
+            v_model = VerticalWeightedAverageModel(full_case_analysis, allowed, hypers)
+        elif 'dae' in v_methods:
+            NotImplemented
+            # h_model = KnnImputation(full_case_analysis, allowed)
+        elif 'zero' in v_methods:
+            v_model = VerticalZeroImputationModel(full_case_analysis, allowed, hypers)
+        else:
+            raise ValueError("Unrecognized imputation method inside "
+                             "methods manually specified: {method} not "
+                             "recognized".format(method=h_methods))
+
+        return v_model, h_model
+
+    def time_series_impute(self, src: list[typing.Any],
+                           full_case_analysis: list[list[float]],
+                           missing_sentinel: typing.Any,
+                           pad_alg_specs: dict,
+                           horizontal_padding_methods: str,
+                           vertical_padding_methods: str,
+                           hyper_parameters: dict,
+                           allowed_features: list[int]
+                           ):
+        """
+
+        :param allowed_features:
+        :param missing_sentinel:
+        :param src:
+        :param full_case_analysis:
+        :param pad_alg_specs:
+        :param horizontal_padding_methods:
+        :param vertical_padding_methods:
+        :param hyper_parameters:
+        :return:
+        """
+        # Horizontally knn, dae, zero | vertically dae, wa, zero
+
+        v_impute, h_impute = self._get_imputation_models(
+            full_case_analysis,
+            allowed_features,
+            [
+                pad_alg_specs,
+                horizontal_padding_methods,
+                vertical_padding_methods,
+                hyper_parameters
+            ]
+        )
+
+        def _fetch_user_specified_specific(key, instance, default, err_msg):
+            _v = default
+            if pad_alg_specs and key in pad_alg_specs:
+                _v = pad_alg_specs[key]
+                if not isinstance(_v, instance):
+                    raise ValueError(err_msg)
+            return _v
+
+        threshold = _fetch_user_specified_specific(
+            key='missing_density_treshold',
+            instance=float, default=DEFAULT_DENSITY_VALUE,
+            err_msg="Missing density threshold must be a real value "
+                    "ranging from zero to one."
+        )
+
+        window = _fetch_user_specified_specific(
+            key='window',
+            instance=int, default=DEFAULT_VERTICAL_WINDOW_SIZE,  # two weeks
+            err_msg="Window size must be a Python int when specified"
+                    " explicitly."
+        )
+
+        def get_local_missing_density(src: list, point: int):
+            return 0
+
+        src_len = len(src)
+        columns = None
+        data_to_impute = [i for i in range(0, src_len) if missing_sentinel in src[i]]
+        for d_i in data_to_impute:
+            missing_density = get_local_missing_density(src, d_i)
+            if missing_density > threshold:
+                # Fallback to horizontal imputation
+                src[d_i] = h_impute(src[d_i], missing_sentinel)
+            else:
+                # Do not make expensive vertical vectors if not necessary.
+                if columns is None:
+                    columns = []
+                    for feature in range(0, src_len):
+                        if feature in allowed_features:
+                            col = [dp[feature] for dp in src]
+                        else:
+                            col = None
+                        columns.append(col)
+
+                def _get_view(column, b_wind, t_wind):
+                    return column[d_i - b_wind if d_i - b_wind > 0 else 0:
+                                  d_i + t_wind if d_i + t_wind < src_len else -1]
+
+                for allow_i in allowed_features:
+                    if src[d_i][allow_i] is missing_sentinel:
+                        sliding_window = _get_view(columns[allow_i], window, window)
+                        src[d_i][allow_i] = v_impute(sliding_window, missing_sentinel)
+
+        return
 
     def pad_horizontally(self):
         NotImplemented
@@ -329,8 +902,12 @@ class Dataset:
     @property
     def desc(self):
         """
+        Get a description of the dataset represented by the object.
+        The description can contain both user inputted messages and
+        autonomously generated ones based on the variables passed as
+        arguments and the size of the dataset.
 
-        :return:
+        :return: a string containing the description of the dataset.
         """
         description = []
         for src, specs in zip(self._data_sources, self._sources_specs):
@@ -342,17 +919,11 @@ class Dataset:
         return description
 
     def __str__(self):
-
-        description = self.desc
-        if description:
-            return description
-        else:
-            return None
+        """ Get description of dataset """
+        return self.desc
 
     def delete(self):
-        """
-        Destroys all memory kept by internal data representation.
-        """
+        """ Destroys all memory kept by internal data representation. """
         for i in range(len(self._data_sources)):
             del self._data_sources[i]
 
@@ -583,14 +1154,19 @@ if __name__ == '__main__':
     #              '{Data}{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};')
 
     k = Dataset()
-    k.load_source(EXAMPLESROOT + '/River Height/LOZZOLO_giornalieri_2001_2022.csv',
-                  '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};',
-                  has_missing_values='',
-                  time_series='Data',
-                  date_format='{day:02}/{month:02}/{year:04}',
-                  pad_missing_days=True)
+    k.load_source(
+        EXAMPLESROOT + '/River Height/LOZZOLO_giornalieri_2001_2022.csv',
+        '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};',
+        has_missing_values='',
+        time_series='Data',
+        date_format='{day:02}/{month:02}/{year:04}',
+        pad_missing_days=True)
+
     k.make_rectangular(to_obj={
-        'Temp': lambda label: {'NE': 3, 'NNE': 4, 'SE': 5,
-                               'SW': 6, 'N': 7, 'S': 8, 'SSW': 9,
-                               'NNW': 10, 'SSE': 11}[label]}
+        'Set': lambda label: {'NE': 3, 'NNE': 4, 'SE': 5, 'ENE': 12,
+                              'SW': 6, 'N': 7, 'S': 8, 'SSW': 9, 'W': 13,
+                              'NNW': 10, 'SSE': 11, 'ESE': 14, 'E': 15,
+                              'WSW': 16, 'NW': 17, 'WNW': 18}[label]},
+        vertical_padding_methods='wa',
+        horizontal_padding_methods='knn'
     )
