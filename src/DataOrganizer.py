@@ -319,7 +319,6 @@ class DataFormatReader:
                 plt.xlabel = x_var
                 plt.ylabel = y_var
                 plt.show()
-
             else:
                 self.var_vector.execute_line(line, line_number)
 
@@ -562,6 +561,6 @@ if __name__ == '__main__':
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
-    Parse_data = Config.EXAMPLESROOT + "/River Height/RiverData.makefile"
+    Parse_data = Config.EXAMPLESROOT + "/River Height/PlotData.makefile"
     dataFormat = DataFormatReader(Parse_data)
     dataFormat.interpret()

@@ -56,7 +56,7 @@ class FormatParser:
     """
 
     @classmethod
-    def _multi_split(cls, string, splits: Iterable):
+    def multi_split(cls, string, splits: Iterable):
         c = [string]
         for sep in splits:
             c = [piece for part in c for piece in part.split(sep)]
@@ -75,7 +75,7 @@ class FormatParser:
         :return: The textual separators in accordance with
         the splitting characters
         """
-        return cls._multi_split(string, splits)[::2]
+        return cls.multi_split(string, splits)[::2]
 
     @classmethod
     def get_names(cls, string: str, splits: Iterable):
@@ -89,7 +89,7 @@ class FormatParser:
         :param splits: The splitting elements
         :return: The IDs enclosed in the splitting characters
         """
-        return cls._multi_split(string, splits)[1::2]
+        return cls.multi_split(string, splits)[1::2]
 
 
 class NoiseGenerator:
@@ -268,7 +268,8 @@ class HorizontalKNNModel(ImputationModel):
         if hypers and 'distance' in hypers:
             self._distance = hypers['distance']
 
-        self._pool = np.array([self._local_mask.mask(dp) for dp in fca])
+        self._pool = np.array(np.array(
+            [self._local_mask.mask(dp) for dp in fca]).astype(np.float32))
 
         if not hypers or 'k' not in hypers:
             self._k = self._get_best_k()
@@ -334,14 +335,13 @@ class HorizontalKNNModel(ImputationModel):
 
             dists_sort, index_sort = _sort_together(np.array(dists), np.arange(0, len(dists)))
             weights = 1 / (np.array(dists_sort[:self._k]) + epsilon)
-            print("Weights: ", weights)
 
             return weights, dists_sort, index_sort
 
         # Compute weighted and normalized sum
         ws, ds, indexes = _get_neighbours()
         norm = np.sum(ws)
-        candidates = np.array(fca)[indexes[:k]]
+        candidates = np.array(fca)[indexes[:self._k]]
         new_x = candidates[0] * ws[0]
         for i in range(1, self._k):
             new_x += candidates[i] * ws[i]
@@ -367,7 +367,7 @@ class HorizontalKNNModel(ImputationModel):
         epsilon factor of 1.e-7
         :return: A good value of k
         """
-        k_t = k_t_p_1 = 5
+        k_t = k_t_p_1 = 16
         error_t_p_1 = 0
         eta, alpha, beta = 0.75, 1.5, 0.0
         upper_bound = 120
@@ -379,21 +379,22 @@ class HorizontalKNNModel(ImputationModel):
         # Else prepare for cross-validation testing
 
         batches = np.array_split(self._pool, 5)
-        print("First batch: ", batches[0][:10])
         error_t = np.inf
         while error_t >= error_t_p_1 and k_t_p_1 < upper_bound:
             error_t = error_t_p_1
             k_t = k_t_p_1
-            test_batch = batches[random.randint(0, 4)]
-            avg_batches = [batches[i] for i in range(0, 5) if i != test_batch]
+
+            test_i = random.randint(0, 4)
+            test_batch = batches[test_i]
+            avg_batches = [batches[i] for i in range(0, 5) if i != test_i]
 
             k_t_p_1 = np.floor(alpha * k_t + beta)
-            self._k = k_t_p_1
+            self._k = int(k_t_p_1)
             errors = [self.get_error(batch, test_batch) for batch in avg_batches]
-            print("Errors: ", errors)
             error_t_p_1 = np.sum(errors) / len(avg_batches)
 
         final_k = np.ceil(k_t + eta * (error_t / error_t_p_1 + 1.e-4) * (k_t_p_1 - k_t))
+        print("Final k:", final_k)
 
         return final_k
 
@@ -411,17 +412,13 @@ class HorizontalKNNModel(ImputationModel):
         artificial_sent = -1050325
 
         def _induced_euclidean(x_1, x_2):
-            print("Orig sample:", x_1, "Asked: ", x_2)
             x_1 = np.array(x_1).astype(np.float32)
-            print("x_1", x_1)
-            print("Nonsentinel: ", x_1 != artificial_sent)
+            x_2 = np.array(x_2).astype(np.float32)
             non_missing_samples = np.flatnonzero(x_1 != artificial_sent)
-            print("Non missing:", non_missing_samples)
-            return np.linalg.norm(np.array(x_1)[non_missing_samples], x_2[non_missing_samples])
+            return np.linalg.norm(x_1[non_missing_samples] - x_2[non_missing_samples])
 
         noisy_set = copy.deepcopy(test_set).astype(float)
         NoiseGenerator.zero_with_p(noisy_set, 0.3)
-        print("Noisy: ", noisy_set)
         results = []
         for test_dp in test_set:
             results.append(self._run_knn(fca, test_dp, distance=_induced_euclidean))
@@ -429,7 +426,7 @@ class HorizontalKNNModel(ImputationModel):
         mse = 0.0
         for g_truth, predicted in zip(test_set, noisy_set):
             mse += (np.square((g_truth - predicted))).mean()
-        print("MSE: ", mse)
+        print("MSE: ", mse / n)
         del noisy_set
         return mse / n
 
@@ -733,7 +730,8 @@ class Dataset:
                 # pad horizontally only
                 NotImplemented
 
-    def _get_imputation_models(self, full_case_analysis: list[list[float]],
+    @staticmethod
+    def _get_imputation_models(full_case_analysis: list[list[float]],
                                allowed: list[int],
                                specifics: list[typing.Any]):
         """
@@ -752,11 +750,13 @@ class Dataset:
         def _build_new_from_dict(dic, key, fail_msg):
             try:
                 model = dic[key]
-                model = model.__new__(model)
+                modell = model.__new__(model)
                 model.__init__(full_case_analysis, allowed, hypers)
             except Exception as runtime_exc:
                 raise ValueError(fail_msg + "original exception: "
                                  + runtime_exc.__str__())
+
+            return model
 
         if 'best' in h_methods:
             NotImplemented
@@ -770,20 +770,7 @@ class Dataset:
                 "Unrecognized imputation method inside "
                 "manually specified imputation methods: "
                 " {method} not recognized".format(method=h_methods))
-            """
-            try:
-                h_model = {'dae': None,
-                           'knn': None,
-                           'zero': HorizontalZeroImputationModel
-                           }[h_methods]
-                h_model = h_model.__new__(h_model)
-                h_model.__init__(full_case_analysis, allowed, hypers)
-            except Exception as GenericException:
-                raise ValueError("Unrecognized imputation method inside "
-                                 "methods manually specified caused exception"
-                                 "{exc}: {method} not recognized".format(
-                    method=h_methods, exc=GenericException))
-            """
+
         if 'best' in v_methods:
             NotImplemented
             # h_model = get_best_imputation(...)
@@ -858,7 +845,7 @@ class Dataset:
         )
 
         def get_local_missing_density(src: list, point: int):
-            return 0
+            return 0.0
 
         src_len = len(src)
         columns = None
@@ -899,6 +886,23 @@ class Dataset:
     def execute(self):
         NotImplemented
 
+    def save_back(self, paths_for_each_source, format_for_each_src):
+        """
+        Save back padded files into provided paths for each source.
+
+        :param paths_for_each_source: Path for each source provided
+        :param format_for_each_src: Format for each source provided
+        :return: Saves onto device padded datasets
+        """
+
+        for path, format_str, src in zip(
+                paths_for_each_source,
+                format_for_each_src,
+                self._data_sources
+        ):
+            format_list = FormatParser.multi_split(format_str, ['{', '}'])
+            Utils.save_file_from_format(path, format_list, src)
+
     @property
     def desc(self):
         """
@@ -915,6 +919,8 @@ class Dataset:
                 # If file...
                 description.append(specs['load_desc'])
             # else create
+            NotImplemented
+
         description = '\n'.join(description)
         return description
 
@@ -1163,10 +1169,16 @@ if __name__ == '__main__':
         pad_missing_days=True)
 
     k.make_rectangular(to_obj={
-        'Set': lambda label: {'NE': 3, 'NNE': 4, 'SE': 5, 'ENE': 12,
-                              'SW': 6, 'N': 7, 'S': 8, 'SSW': 9, 'W': 13,
-                              'NNW': 10, 'SSE': 11, 'ESE': 14, 'E': 15,
-                              'WSW': 16, 'NW': 17, 'WNW': 18}[label]},
+        'Set': lambda label:
+        {'NE': 3, 'NNE': 4, 'SE': 5, 'ENE': 12,
+         'SW': 6, 'N': 7, 'S': 8, 'SSW': 9, 'W': 13,
+         'NNW': 10, 'SSE': 11, 'ESE': 14, 'E': 15,
+         'WSW': 16, 'NW': 17, 'WNW': 18}[label]},
         vertical_padding_methods='wa',
-        horizontal_padding_methods='knn'
+        horizontal_padding_methods='knn',
+        hyper_parameters={'k': 64}
     )
+
+    k.save_back([EXAMPLESROOT + '/River Height/LOZZOLO_giornalieri_2001_2022pad.csv'],
+                ['{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp}'],
+                )

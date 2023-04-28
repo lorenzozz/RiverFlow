@@ -7,10 +7,11 @@ from Config import *
 from DataOrganizer import DataFormatReader  # Csv naive parsing
 
 
-def _save_file_from_format(dest_path: str, format_list: list, data_points: Iterable):
+def save_file_from_format(dest_path: str, format_list: list, data_points: Iterable):
     """
     Saves data points given in data_points inside the destination path specified according
     to the format list provided. Expects data in row form, not column-wise. (c-contiguous)
+
     :param data_points: Data to save
     :param dest_path: Destination file path
     :param format_list: Format list
@@ -18,8 +19,8 @@ def _save_file_from_format(dest_path: str, format_list: list, data_points: Itera
     """
     with open(dest_path, "w") as new_csv_file:
         # Get indices of all labels in original formatting string
-        indices = [format_list.index(var) for var in format_list[1::2]]
 
+        indices = [format_list.index(var) for var in format_list[1::2]]
         lines = []
         for p in data_points:
             for i, val in zip(indices, p):
@@ -70,7 +71,7 @@ def _sample_n_for_each_hour(path: str, dest_path: str, format_str: str, n: int):
             l_entry = d_point
             sampled_points.append(d_point)
 
-    _save_file_from_format(dest_path, format_list=f_list, data_points=sampled_points)
+    save_file_from_format(dest_path, format_list=f_list, data_points=sampled_points)
 
 
 def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, cast_to: Type, verbose: bool = False):
@@ -146,7 +147,7 @@ def _pack_daily(path: str, dest_path: str, format_str: str, target_var: str, cas
         grouped_data.append([curr_date, curr_day_data])
 
     print([len(g[1]) for g in grouped_data].count(24), len(grouped_data))
-    _save_file_from_format(dest_path, ['', 'Date', ';', target_var, ''], grouped_data)
+    save_file_from_format(dest_path, ['', 'Date', ';', target_var, ''], grouped_data)
 
 
 def find_first_before(time_series: list, date_format: str, date):
