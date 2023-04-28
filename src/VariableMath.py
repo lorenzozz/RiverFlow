@@ -91,8 +91,10 @@ def vec_load(x, sep: str, enclosed=True):
     :param enclosed: Whether marks like '[' and ']' are present
     :return: the loaded vector
     """
-    d = np.array([np.fromstring(s[1:-1] if enclosed else s, float, sep=sep) for s in x])
-    return d
+    d = []
+    for s in x:
+        d.append(np.array(np.fromstring(s[1:-1].strip() if enclosed else s, float, sep=sep)))
+    return np.array(d)
 
 
 def vec_zavadskas(x, verbose=False):

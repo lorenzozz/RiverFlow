@@ -11,9 +11,10 @@ If not copyrighted, NASA material may be reproduced and distributed without furt
  permission from NASA.
 
  """
-
+import re
 import shutil
 import requests
+import mechanicalsoup
 
 from PIL import Image
 from typing import Tuple
@@ -22,7 +23,6 @@ from datetime import date
 from dateutil.rrule import rrule, DAILY
 
 import Config
-
 
 REQ_TIME = '2023-03-24T00:00:00'
 SAT_REQ_URL = 'https://gibs-c.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?'
@@ -52,7 +52,6 @@ def get_sat_img(year: int, month: int, day: int, flush_cache: bool = False) -> s
     # Request data from nasa api only if requested data is not already cached or
     # if a flush to cache has been requested.
     if not path.exists(gen_path) or flush_cache:
-
         response = requests.get(SAT_REQ_URL + 'TIME=' + req_time + SAT_TILE_INFO, stream=True)
         response.raw.decode_content = True
 
@@ -104,5 +103,50 @@ def populate_range(years: Tuple[int, int], months: Tuple[int, int], days: Tuple[
             print(f"* Acquired satellite data from {req_time}")
 
 
+ARPA_FORM = 'https://www.arpa.piemonte.it/radar/open-scripts/richiesta_dati_gg.php'
+
+
+def arpa_data():
+    """
+
+    :return:
+    """
+
+    mail = 'zanilorenzopm@gmail.com'
+    browser = mechanicalsoup.Browser()
+    form_page = browser.get(ARPA_FORM)
+    html = form_page.soup
+
+    captcha_decl = re.compile('[ \t\n]*var [xy] = (?P<value>[0-9]+);')
+    expressions = captcha_decl.findall(html.__str__())
+
+    captcha_solution = sum([int(v) for v in expressions])
+
+    feature_requested_form = html.select('#form_stazione')[0]
+    feature_requested_form.select('#filterParametro')[0]['value'] = 'Vento'
+    feature_requested_form.select('#filterSiglaPro')[0]['value'] = 'Asti'
+    feature_requested_form.select('#stazioni_filtrate')[0]['value'] = 'ASTI'
+
+    browser.submit(feature_requested_form, ARPA_FORM)
+    # Get form to fill
+    form_to_submit = html.select('#form1')[0]
+    print(form_to_submit.s)
+    # Fill email
+    form_to_submit.select('#mail')[0]['value'] = mail
+    # Fill confirmation email
+    form_to_submit.select('#conf_mail')[0]['value'] = mail
+    # Fill captcha
+    form_to_submit.select('#calcolo_antispam')[0] = str(captcha_solution)
+
+    pdf_check = form_to_submit.select('#tipofile')[0]
+    csv_check = form_to_submit.select('#tipofile')[1]
+
+    # Select csv values
+
+    form_to_submit.select('#datadal')[0]['value'] = '2021-03-21'
+    form_to_submit.select('#dataal')[0]['value'] = '2021-03-21'
+    browser.launch_browser(soup=html)
+
+
 if __name__ == '__main__':
-    _ = None
+    arpa_data()
