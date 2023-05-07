@@ -9,11 +9,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 class SeqToSeq(tf.keras.Model):
     def __init__(self):
         super().__init__()
+        self.initial_dropout = tf.keras.layers.Dropout(0.3)
         self.make_repr_layer = tf.keras.layers.LSTM(
             units=356,
             input_shape=(7, 60),
             return_state=True,
-            recurrent_dropout=0.5,
+            recurrent_dropout=0.15,
             unroll=True
         )
 
@@ -27,9 +28,9 @@ class SeqToSeq(tf.keras.Model):
         )
 
         self.flattener = tf.keras.layers.Flatten()
-        self.flat_dropout = tf.keras.layers.Dropout(0.4)
+        self.flat_dropout = tf.keras.layers.Dropout(0.45)
         self.map_layer = tf.keras.layers.Dense(
-            units=768, activation='relu'
+            units=1024, activation='relu'
         )
         self.inner_dropout = tf.keras.layers.Dropout(0.4)
         self.first_deep_layer = tf.keras.layers.Dense(
@@ -48,6 +49,7 @@ class SeqToSeq(tf.keras.Model):
         x_batch = inputs[0]
         m_batch = inputs[1]
 
+        x_batch = self.initial_dropout(x_batch, training=train)
         _, s_h, s_c = self.make_repr_layer(x_batch, training=train)
         states = [s_h, s_c]
         decoded = self.decoder_layer(m_batch, initial_state=states, training=train)
@@ -168,7 +170,7 @@ def _parse_dataset(dset):
     return expected_data, meteos, input_data
 
 
-load_model = True
+load_model = False
 
 if __name__ == '__main__' and not load_model:
 
@@ -211,18 +213,18 @@ if __name__ == '__main__' and not load_model:
     # Begin training parameters
 
     opt = tf.keras.optimizers.legacy.SGD(
-        learning_rate=0.025,
-        momentum=0.019,
+        learning_rate=0.013,
+        momentum=0.014,
         nesterov=True,
     )
     loss_func = tf.keras.losses.MeanSquaredError()
     epochs = 500
 
-    new_opt = tf.keras.optimizers.SGD(
+    new_opt = tf.keras.optimizers.RMSprop(
         learning_rate=0.025,
-        momentum=0.008,
-        nesterov=True,
-        weight_decay=0.004
+        momentum=0.0010,
+        # nesterov=True,
+        weight_decay=0.002
     )
     seq_to_seq.compile(optimizer=new_opt,
                        loss=loss_func,
@@ -239,7 +241,7 @@ if __name__ == '__main__' and not load_model:
                       metrics=['mean_squared_error'])
 
     training_dataset = tf.data.Dataset.from_tensor_slices(
-        (xs, decode, output)).shuffle(1024).batch(64)
+        (xs, decode, output)).shuffle(1024).batch(32)
 
     test_losses = []
     training_losses = []
@@ -255,9 +257,9 @@ if __name__ == '__main__' and not load_model:
             opt.apply_gradients(zip(grad_1, seq_to_seq.trainable_weights))
 
         if epoch == 100:
-            new_opt.learning_rate = new_opt.learning_rate / 2
+            new_opt.learning_rate = new_opt.learning_rate / 1.7
         elif epoch % 50 == 0:
-            new_opt.learning_rate = new_opt.learning_rate / 1.414
+            new_opt.learning_rate = new_opt.learning_rate / 1.35
             print(f"** Current learning rate: {new_opt.learning_rate}")
         elapsed = time.perf_counter() - epoch_beginning
         print(f"Terminated all batches. Elapsed seconds: {elapsed:0.4f}. "
@@ -274,7 +276,7 @@ if __name__ == '__main__' and not load_model:
     save = True
     if save:
         architecture_path = Config.EXAMPLESROOT + '/River Height/Architecture/'
-        tf.keras.saving.save_model(seq_to_seq, architecture_path + 'seq_to_seq4')
+        tf.keras.saving.save_model(seq_to_seq, architecture_path + 'seq_to_seq6')
 
     """
     @tf.function
@@ -390,7 +392,7 @@ if __name__ == '__main__' and load_model:
 
     prediction = []
     ground_training_truth = []
-    for i in range(21, 27):
+    for i in range(0, 7):
         x_train = np.expand_dims(xs[+i * 7], 0)
         m_train = np.expand_dims(decode[+i * 7], 0)
         prediction.append(
