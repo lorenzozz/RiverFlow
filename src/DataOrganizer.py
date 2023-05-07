@@ -315,7 +315,8 @@ class DataFormatReader:
                     raise IncorrectPlotRequest(x_var, y_var, "size do not match.")
 
                 plt.figure()
-                plt.plot(x_data, y_data)
+                plt.plot(x_data, y_data, label=x_var)
+                plt.legend()
                 plt.xlabel = x_var
                 plt.ylabel = y_var
                 plt.show()
@@ -561,6 +562,6 @@ if __name__ == '__main__':
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
-    Parse_data = Config.EXAMPLESROOT + "/River Height/PlotData.makefile"
+    Parse_data = Config.EXAMPLESROOT + "/River Height/RealRnnTest.makefile"
     dataFormat = DataFormatReader(Parse_data)
     dataFormat.interpret()

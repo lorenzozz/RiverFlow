@@ -155,7 +155,6 @@ class VariableVectorManager:
         :param variable: The variable name (Optional to generate more explicative errors)
         :return: The python equivalent of requested variable type
         """
-
         recognized_v_types = {
             "categorical": str,
             "boolean": str,
@@ -163,9 +162,9 @@ class VariableVectorManager:
             "integer": np.int32
         }
         if var_type not in recognized_v_types.keys():
-            raise TypeError("Expected user defined variable {v} to have a "
-                            "predefined type, found unrecognized type {t}"
-                            "instead.".format(v=variable, t=var_type))
+            raise TypeError(f"Expected user defined variable {variable} to have a "
+                            f"predefined type, found unrecognized type {var_type}"
+                            "instead.")
         else:
             return recognized_v_types[var_type]
 

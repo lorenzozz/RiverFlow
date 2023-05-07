@@ -12,6 +12,7 @@ from Config import *
 from DataOrganizer import DataFormatReader
 from matplotlib import pyplot as plt
 from typing import Iterable
+import locale
 
 DEFAULT_VERTICAL_WINDOW_SIZE = 14
 DEFAULT_DENSITY_VALUE = 0.7
@@ -645,14 +646,15 @@ class Dataset:
         :return: No explicit returns but alters dataset permanently.
         """
 
-        incomplete_srcs = []
-        for src, src_spec, vs in zip(
-                self._data_sources,
-                self._sources_specs,
-                self._variables
-        ):
+        resources = (
+            self._data_sources,
+            self._sources_specs,
+            self._variables
+        )
+        incomplete_sources = []
+        for src, src_spec, vs in zip(*resources):
             if 'has_missing_values' in src_spec:
-                incomplete_srcs.append(src)
+                incomplete_sources.append(src)
 
                 if src_spec['has_missing_values'] is None:
                     raise ValueError("Attempting to make rectangular an "
@@ -667,7 +669,7 @@ class Dataset:
                                          "is illegal. Please specify a date format.")
                     self._pad_missing_days(src_spec, vs, src)
 
-        for src in incomplete_srcs:
+        for src in incomplete_sources:
             vs = self._variables[self._data_sources.index(src)]
             specs = self._sources_specs[self._data_sources.index(src)]
 
@@ -679,12 +681,11 @@ class Dataset:
             missing_sent = specs['has_missing_values']
             # self._cast_variables(src)
 
-            for variable in filter(lambda f: f not in ignore_vs, vs):
-                _def_cast = None
+            target_variables = filter(lambda f: f not in ignore_vs, vs)
+            for variable in target_variables:
                 missing_sent = specs['has_missing_values']
 
-                if variable in to_obj:
-                    print("Var has")
+                if to_obj and variable in to_obj:
                     us_specified = to_obj[variable]
 
                     def cast(v):
@@ -695,11 +696,8 @@ class Dataset:
                     def _default_cast(el):
                         return float(el) if el is not missing_sent else el
 
-                    if not user_default_cast:
-                        cast = _default_cast
-                    else:
-                        # Else use default casting to float.
-                        cast = user_default_cast
+                    # Use default casting to float
+                    cast = _default_cast if not user_default_cast else user_default_cast
 
                 v_i = vs.index(variable)
                 for dp in src:
@@ -725,7 +723,6 @@ class Dataset:
                     hyper_parameters=hyper_parameters,
                     allowed_features=allowed_features
                 )
-                print("Result: \n\n", src[:10])
             else:
                 # pad horizontally only
                 NotImplemented
@@ -750,12 +747,11 @@ class Dataset:
         def _build_new_from_dict(dic, key, fail_msg):
             try:
                 model = dic[key]
-                modell = model.__new__(model)
+                model = model.__new__(model)
                 model.__init__(full_case_analysis, allowed, hypers)
             except Exception as runtime_exc:
                 raise ValueError(fail_msg + "original exception: "
                                  + runtime_exc.__str__())
-
             return model
 
         if 'best' in h_methods:
@@ -811,18 +807,27 @@ class Dataset:
         """
         # Horizontally knn, dae, zero | vertically dae, wa, zero
 
+        algorithm_specifics = [
+            pad_alg_specs,
+            horizontal_padding_methods,
+            vertical_padding_methods,
+            hyper_parameters
+        ]
         v_impute, h_impute = self._get_imputation_models(
             full_case_analysis,
             allowed_features,
-            [
-                pad_alg_specs,
-                horizontal_padding_methods,
-                vertical_padding_methods,
-                hyper_parameters
-            ]
+            specifics=algorithm_specifics
         )
 
         def _fetch_user_specified_specific(key, instance, default, err_msg):
+            """
+            TODO:
+            :param key:
+            :param instance:
+            :param default:
+            :param err_msg:
+            :return:
+            """
             _v = default
             if pad_alg_specs and key in pad_alg_specs:
                 _v = pad_alg_specs[key]
@@ -1159,26 +1164,43 @@ if __name__ == '__main__':
     # _pad_dataset(EXAMPLESROOT + '/River Height/LOZZOLO_giornalieri_2001_2022.csv',
     #              '{Data}{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};')
 
+    locale.setlocale(locale.LC_ALL, 'fr_FR')
+
     k = Dataset()
     k.load_source(
-        EXAMPLESROOT + '/River Height/LOZZOLO_giornalieri_2001_2022.csv',
+        EXAMPLESROOT + '/Meteo/LOZZOLO_giornalieri_2001_2022.csv',
         '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};',
         has_missing_values='',
         time_series='Data',
         date_format='{day:02}/{month:02}/{year:04}',
         pad_missing_days=True)
 
-    k.make_rectangular(to_obj={
-        'Set': lambda label:
-        {'NE': 3, 'NNE': 4, 'SE': 5, 'ENE': 12,
-         'SW': 6, 'N': 7, 'S': 8, 'SSW': 9, 'W': 13,
-         'NNW': 10, 'SSE': 11, 'ESE': 14, 'E': 15,
-         'WSW': 16, 'NW': 17, 'WNW': 18}[label]},
-        vertical_padding_methods='wa',
+    k.make_rectangular(
+        to_obj={'Set': lambda x: 0.0},
+        vertical_padding_methods='zero',
         horizontal_padding_methods='knn',
-        hyper_parameters={'k': 64}
+        hyper_parameters={'k': 64},
+        user_default_cast=lambda x:
+        locale.atof(x) if x != '' else ''
     )
 
-    k.save_back([EXAMPLESROOT + '/River Height/LOZZOLO_giornalieri_2001_2022pad.csv'],
-                ['{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp}'],
+    k.save_back([EXAMPLESROOT + '/Meteo/LOZZOLO_giornalieri_2001_2022Pad.csv'],
+                [
+                    '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};'
+                ],
                 )
+
+    # Bocchetta:
+    # '{Data};{PNove};{PZero};{Neve};{NeveS};{NeveAlt};{TempAvg};{TempMax};{TempMin};{VelMedia};{Raffica};{Durata};{Rad};'
+
+    # Cellio
+    # '{Data};{PNove};{PZero};{TempAvg};{TempMax};{TempMin};'
+
+    # Carcoforo
+    # '{Data};{PNove};{PZero};{TempAvg};{TempMax};{TempMin};'
+
+    # Rima
+    # '{Data};{PNove};{PZero};{TempAvg};{TempMax};{TempMin};'
+
+    # Lozzolo
+    # '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};'

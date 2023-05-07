@@ -1,0 +1,18 @@
+> Changing field error to attempt_recovery
+> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/savefile', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/test']
+> Changing field proportions to [75, 25]
+> Generated 1701 data points from input configuration
+> Non target variables:['ResF', 'PNove'], Target variables: ['ResT']
+> Successfully compiled the plan as a list of (x,y) pairs with labels "x" e "y" split with  percentages [75, 25]
+
+> DATA FED INTO THE MODEL:
+
+> | ResF                       | PNove                                           
+> | 30 before x           X    | 7 before x           X    14 after x            
+> <---->  ..28.. <----> <-^^-> <---->  ..5.. <----> <-^^-> <---->  ..12.. <----> 
+
+> EXPECTED OUTPUT OF THE MODEL:
+
+> | ResT                      
+> | Y    8 after y            
+> <-^^-> <---->  ..6.. <----> 

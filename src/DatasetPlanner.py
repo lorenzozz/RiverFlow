@@ -88,13 +88,12 @@ class Aligner:
         # if var_name in self.window_generation_type.keys():
         #    raise VariableSliceRedefinition(var_name)
         self.sliding_window[var_name] = request
-
         budget = self.budgets[var_name]
-
         # TODO: REFactor
         # cant use for loop as lower window must grow while upper window must decrease
         # Lower window
         if request[0] > budget[0]:
+
             self.windows[var_name][0] += request[0] - budget[0]
             self.budgets[var_name][0] = 0
         else:
@@ -102,6 +101,7 @@ class Aligner:
 
         # Upper window
         if request[1] > budget[1]:
+
             self.windows[var_name][1] -= request[1] - budget[1]
             self.budgets[var_name][1] = 0
         else:
@@ -169,7 +169,6 @@ class Aligner:
         # The +1 accounts for the fact that the current element is included in the window
         # Thus the window has size (prev_request, 1+after_request)
         slider = self.top_slide(var_name) + self.bot_slide(var_name) + 1
-
         # Trim data up to usable window in order to slide window over it and collect n samples
         trimmed_data = self.var_vec.get_variable(var_name)[l_bot:l_top]
         var = self.var_vec.get_variable(var_name)
@@ -182,7 +181,6 @@ class Aligner:
             # Each element of var is an iterable. Currently, supports just one-dimensional data
             # (In the future, it may support tensor maps)
             e_size = np.size(var[0])
-
             views = np.lib.stride_tricks.sliding_window_view(trimmed_data, (slider, e_size))
             conv_data = np.array([np.concatenate(*w) for w in views])
         return conv_data
@@ -229,8 +227,10 @@ class Aligner:
         align_data = [self.var_vec.get_variable(var) for var in self.alignment]
         intersection = align_data[0]
 
-        for data in align_data:
-            intersection = np.intersect1d(data, intersection)
+        independent_vars = [self.var_vec.get_variable(var) for var in set(self.alignment)]
+        for data in independent_vars:
+            intersection = intersection[np.in1d(intersection, data)]
+            # intersection = np.intersect1d(intersection, data)
 
         """
         Get bottom alignment, a mapped value describing how different
@@ -248,7 +248,6 @@ class Aligner:
         bottom_aligns = [np.nonzero(data1 == intersection[0])[0][0] for data1 in align_data]
         self.init_align = max(bottom_aligns)
         bottom_aligns = [self.init_align - el for el in bottom_aligns]
-
         """
         Get top alignment, a mapped value describing the ceiling
         of the alignment

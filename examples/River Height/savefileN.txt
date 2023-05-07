@@ -1,0 +1,18 @@
+> Changing field error to attempt_recovery
+> Changing field split files to ['C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/savefileN', 'C:/Users/picul/PycharmProjects/pythonProject/RiverFlow/examples/River Height/testN']
+> Changing field proportions to [75, 25]
+> Generated 1709 data points from input configuration
+> Non target variables:['NormalizedRes', 'PNove'], Target variables: ['NormalizedResT']
+> Successfully compiled the plan as a list of (x,y) pairs with labels "x" e "y" split with  percentages [75, 25]
+
+> DATA FED INTO THE MODEL:
+
+> | NormalizedRes              | PNove                                          
+> | 30 before x           X    | 7 before x           X    6 after x            
+> <---->  ..28.. <----> <-^^-> <---->  ..5.. <----> <-^^-> <---->  ..4.. <----> 
+
+> EXPECTED OUTPUT OF THE MODEL:
+
+> | NormalizedResT            
+> | Y    6 after y            
+> <-^^-> <---->  ..4.. <----> 
