@@ -28,17 +28,17 @@ class SeqToSeq(tf.keras.Model):
         )
 
         self.flattener = tf.keras.layers.Flatten()
-        self.flat_dropout = tf.keras.layers.Dropout(0.45)
+        self.flat_dropout = tf.keras.layers.Dropout(0.35)
         self.map_layer = tf.keras.layers.Dense(
             units=1024, activation='relu'
         )
         self.inner_dropout = tf.keras.layers.Dropout(0.4)
         self.first_deep_layer = tf.keras.layers.Dense(
-            units=768, activation='tanh'
+            units=1024, activation='tanh'
         )
         self.deep_dropout = tf.keras.layers.Dropout(0.4)
         self.deep_layer = tf.keras.layers.Dense(
-            units=768, activation='tanh'
+            units=1024, activation='tanh'
         )
         self.output_layer = tf.keras.layers.Dense(
             units=168
@@ -170,7 +170,7 @@ def _parse_dataset(dset):
     return expected_data, meteos, input_data
 
 
-load_model = False
+load_model = True
 
 if __name__ == '__main__' and not load_model:
 
@@ -224,7 +224,7 @@ if __name__ == '__main__' and not load_model:
         learning_rate=0.025,
         momentum=0.0010,
         # nesterov=True,
-        weight_decay=0.002
+        weight_decay=0.005
     )
     seq_to_seq.compile(optimizer=new_opt,
                        loss=loss_func,
@@ -276,7 +276,7 @@ if __name__ == '__main__' and not load_model:
     save = True
     if save:
         architecture_path = Config.EXAMPLESROOT + '/River Height/Architecture/'
-        tf.keras.saving.save_model(seq_to_seq, architecture_path + 'seq_to_seq6')
+        tf.keras.saving.save_model(seq_to_seq, architecture_path + 'seq_to_seq7')
 
     """
     @tf.function
@@ -347,7 +347,7 @@ if __name__ == '__main__' and load_model:
     encoder_model = tf.keras.saving.load_model(save_path + 'encoder_model')
     predictor_model = tf.keras.saving.load_model(save_path + 'predictor_model')
 
-    complete_model = tf.keras.saving.load_model(save_path + 'seq_to_seq4')
+    complete_model = tf.keras.saving.load_model(save_path + 'seq_to_seq7')
 
 
     @tf.function
@@ -393,13 +393,13 @@ if __name__ == '__main__' and load_model:
     prediction = []
     ground_training_truth = []
     for i in range(0, 7):
-        x_train = np.expand_dims(xs[+i * 7], 0)
-        m_train = np.expand_dims(decode[+i * 7], 0)
+        x_train = np.expand_dims(xs[2+i * 7], 0)
+        m_train = np.expand_dims(decode[2+i * 7], 0)
         prediction.append(
-            complete_model([x_train, m_train])[0]  # * 34.193 + 29.672
+            complete_model([x_train, m_train])[0] * 34.193 + 29.672
         )
         ground_training_truth.append(
-            output[i * 7]  # * 34.193 + 29.672
+            output[2+i * 7] * 34.193 + 29.672
         )
 
     _plot_prediction \
