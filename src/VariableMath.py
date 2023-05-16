@@ -93,7 +93,8 @@ def vec_load(x, sep: str, enclosed=True):
     """
     d = []
     for s in x:
-        d.append(np.array(np.fromstring(s[1:-1].strip() if enclosed else s, float, sep=sep)))
+        d.append(np.array(np.fromstring(
+            s[1:-1].strip() if enclosed else s, float, sep=sep)))
     return np.array(d)
 
 
