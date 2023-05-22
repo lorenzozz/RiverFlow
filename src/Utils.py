@@ -174,7 +174,7 @@ def find_first_before(time_series: list, date_format: str, date):
     return time_series.index(time_series_rep), missing_date_rep
 
 
-def check_series_for_missing_days(data: list, date_format: str) -> list:
+def check_series_for_missing_days(data: list, date_format: str, verbose = False) -> list:
     """
     Checks a time series for missing days in the sequence. Takes as input
     a vector representing all dates in the series.
@@ -198,6 +198,8 @@ def check_series_for_missing_days(data: list, date_format: str) -> list:
         )
         if day_rep not in data:
             missing.append(time_date)
+            if verbose:
+                print(day_rep)
     return missing
 
 

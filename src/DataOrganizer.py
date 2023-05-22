@@ -78,7 +78,7 @@ class DataFormatReader:
         self.rows = [
             r for r in self.rows
             if not str.isspace(r) and
-            not r[0] == '#'
+               not r[0] == '#'
         ]
 
     def parse_part_one(self):
@@ -166,7 +166,10 @@ class DataFormatReader:
 
             # Note that Categorical and Boolean variables are not converted
             # to float automatically.
-            as_type = VariableVectorManager.take_type(self.variables[variable])
+            as_type = VariableVectorManager.take_type(
+                self.variables[variable],
+                variable=variable
+            )
 
             # Take index of target variable and file out of loop.
             var_col_i = self.files_arglists[owner].index(variable)
@@ -208,7 +211,8 @@ class DataFormatReader:
                     raise BadFormatStyle(self.format_path, f"Unrecognized data category at "
                                                            f"line" + source_line)
                 elif variable_name not in self.variables.keys():
-                    raise BadFormatStyle(self.format_path, f"Unknown variable referenced at"
+                    raise BadFormatStyle(self.format_path, f"Unknown variable {variable_name}"
+                                                           f" referenced at"
                                                            f" line" + source_line)
 
                 self.variables[variable_name] = category
@@ -533,6 +537,7 @@ class DataFormatReader:
                 if not format_string[-1]:
                     parsed_data.append(line)
                 return parsed_data
+
             data = [
                 _parse_csv_line(format_list, ';'.join(line))
                 for line in lines
@@ -562,6 +567,6 @@ if __name__ == '__main__':
     DataFolderPath = 'C:/Users/picul/OneDrive/Documenti/RiverData/'
     CSVRiverPath = 'sesia-scopello-scopetta.csv'
 
-    Parse_data = Config.EXAMPLESROOT + "/River Height/RealRnnTest.makefile"
+    Parse_data = Config.EXAMPLESROOT + "/River Height/Finaltest.makefile"
     dataFormat = DataFormatReader(Parse_data)
     dataFormat.interpret()

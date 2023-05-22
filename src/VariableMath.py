@@ -118,7 +118,7 @@ def vec_zavadskas(x, verbose=False):
     return logarithmic
 
 
-def vec_max_linear(x, verbose=False):
+def vec_max_linear(x, verbose=True):
     """ Computes the maximum linear normalization of x.
     The vector is normalized as follows:
         x_i' = (x_i) / max(X)

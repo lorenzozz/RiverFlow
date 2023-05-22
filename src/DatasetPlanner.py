@@ -224,6 +224,7 @@ class Aligner:
     def create_alignment(self):
 
         # Find first element present in all aligning elements.
+        print(self.alignment)
         align_data = [self.var_vec.get_variable(var) for var in self.alignment]
         intersection = align_data[0]
 
@@ -564,6 +565,7 @@ class DatasetPlanner:
         self.logs.log(f"> Generated {n_data_points} data points from input configuration")
 
         no_target_v = [v for v in self.aligner.variables if v not in self.aligner.target_vars]
+
         self.logs.log(f"> Non target variables:" + str(no_target_v) +
                       f", Target variables: {self.aligner.target_vars}")
         try:

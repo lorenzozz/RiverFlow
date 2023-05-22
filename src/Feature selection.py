@@ -196,7 +196,7 @@ if __name__ == '__main__':
 
     print("RIPETUTE:", len(set(dates_river)) - len(dates_river),
           len(set(dates)) - len(dates))
-    a = source.get_var('PZeroBo')
+    a = source.get_var('NeveSBo')
     meteo = a[i:]
 
     river_source.map(_get_vec, exclude=['Data'])

@@ -13,6 +13,7 @@ If not copyrighted, NASA material may be reproduced and distributed without furt
  """
 import re
 import shutil
+import time
 import typing
 import warnings
 import requests
@@ -33,7 +34,7 @@ try:
 except ImportError:
     raise ImportError(
         "Non è stato possibile importare la libreria richiesta per la "
-        "modifica dei file immagine. Perfavore, verifica di avere installato "
+        "modifica dei file immagine. Per favore, verifica di avere installato "
         "PIL sul tuo pip."
     )
 
@@ -251,9 +252,10 @@ class ARPAJsonApiReader:
     def feature_is_avail_in_station(station_name: str, feature: str):
         """ Verifica che la grandezza richiesta è presente all'interno della
         stazione station_name """
+        print("Stazione e feature:", station_name, feature)
         for station in ARPAJsonApiReader.stations:
             if station_name == station['properties']['denominazione']:
-                return feature in station['properties']['tipo_stazione']
+                return feature in station['properties']['tipo_staz']
         raise ValueError(
             "La stazione {s} non è presente nell'elenco delle stazioni "
             "dell'API dell'ARPA. Verifica che la richiesta sia stata "
@@ -292,8 +294,59 @@ class ARPAJsonApiReader:
         grandezza indicata come parametro. """
         pass
 
+    @staticmethod
+    def station_exists(station_name: str):
+        """ Verifica che la stazione esista dentro il file JSON dell'API """
+        for station in ARPAJsonApiReader.stations:
+            if station_name == station['properties']['denominazione']:
+                return True
+        return False
+
+    @staticmethod
+    def date_is_valid(date_range: str):
+        """ Controlla che il range di date sia valido prima di inviare
+        la richiesta all'ARPA """
+        # TODO: Controllo su validità delle date
+        pass
+
     def __del__(self):
         del ARPAJsonApiReader._json
+
+    @staticmethod
+    def map_data_to_keys(keys):
+        """ Mappa una lista di feature meteo nell'equivalente per la richiesta
+        API ARPA. """
+        unrecognized_keys = set(keys) - set(ARPA_VALUES.keys())
+        failed_keys = []
+        for u_key in unrecognized_keys:
+
+            def _get_true_label(alias):
+                return next((key for key in ALIASES.keys() if alias in ALIASES[key]), None)
+
+            true_label = _get_true_label(u_key)
+            if not true_label:
+                failed_keys.append(u_key)
+            else:
+                keys[keys.index(u_key)] = true_label
+        return list(map(lambda y: ARPA_VALUES[y], keys)), failed_keys
+
+    @staticmethod
+    def feature_list_to_string(features):
+        """ Converte una lista di feature nella corrispettiva stringa di
+        targhette di variabili come da API ARPA. """
+
+        def label_to_letter(feature):
+            return ARPA_VALUES[feature]
+
+        return ''.join([label_to_letter(feature) for feature in features])
+
+    @staticmethod
+    def station_name_to_id(station_name):
+        """ Mappa dal nome della stazione nell'ID dell'API ARPA. """
+        for station in ARPAJsonApiReader.stations:
+            if station_name == station['properties']['denominazione']:
+                return station['properties']['codice_stazione']
+        return None
 
 
 class IMAPAccesser:
@@ -361,7 +414,8 @@ class IMAPAccesser:
         with self._available_id_lock:
             if request_id in self._available_request_ids:
                 return self._available_request_ids[request_id]
-        return None
+            else:
+                return None
 
     def expect_new_request_id(self, request_id):
         """ Aggiungi un nuovo id di richiesta alla lista degli id di cui
@@ -438,6 +492,8 @@ class IMAPAccesser:
                     if req_id and req_id in self._remaining_expected_ids:
                         ids += [req_id]
                         mails += [email_message]
+                        # TODO: Mark email as read when reading.
+                        # imap.store(mail_index.decode('utf-8', '+FLAGS', '\\Seen')
 
         return ids, mails
 
@@ -455,10 +511,14 @@ class IMAPAccesser:
             )
         while self._remaining_expected_ids:
             with self._available_id_lock:
+                print("Sono l'accesser, ora controllo le email che ho trovato... ")
+                time.sleep(5)
                 # È possibile che più di una mail sia arrivata,
                 # perciò gotten_ids e mails sono liste.
                 gotten_ids, mails = self._read_available_mails()
                 id_m_pairs = zip(gotten_ids, mails)
+                print("Id email presi:", gotten_ids)
+                print("Email prese: ", mails)
                 if gotten_ids and mails:
                     for req_id, m in id_m_pairs:
                         if req_id not in self._remaining_expected_ids:
@@ -556,6 +616,71 @@ class IMAPAccesser:
         return None
 
 
+class APIWorker:
+    """ L'entità che si occupa di leggere la richiesta API dal server IMAP interrogando
+    l'IMAP manager, si occupa di parse-are la mail e salvare il CSV in memoria. """
+
+    def __init__(self, req_id, imap_manager):
+        """ Inizializza un entità assegnata a salvare la richiesta API in locale. """
+        self._assigned_api_response = None
+        self._req_id = req_id
+        self._imap_aut: IMAPAccesser = imap_manager
+        self._csv = None
+
+    def __call__(self):
+        """ Continua a prompt-are il server IMAP cercando di ottenere i dati. """
+        print("Worker mi hanno chiamato..")
+        while self._assigned_api_response is None:
+            print("Sono un worker, ho preso il lock e ora controllo...")
+            time.sleep(4)
+            self._assigned_api_response = self._imap_aut.maybe_get_email_if_available(
+                self._req_id
+            )
+        self._parse_message()
+
+    def _parse_message(self):
+        """ Parsa il messaggio email e salvalo in memoria. """
+
+        def _get_content_transfer_encoding(email_part: email.message.Message):
+            """ Ottieni il tipo di encoding dell'allegato presente nella mail """
+            if 'Content-Transfer-Encoding' in email_part.keys():
+                return email_part.get('Content-Transfer-Encoding')
+            else:
+                return None
+
+        for part in self._assigned_api_response.walk():
+            # Fai cast a string per evitare 'None'
+            file_name = str(part.get_filename())
+            file_extension = re.compile(r'.*\.(?P<extension>.+)').findall(file_name)
+            if not file_extension or 'csv' not in file_extension:
+                # Non provare il parse se il file non è csv
+                continue
+
+            main_type = part.get_content_maintype()
+            if main_type == 'application':
+                if _get_content_transfer_encoding(email_part=part) != 'base64':
+                    raise ValueError(
+                        "Errore interno dell'API: Il file CSV in allegato in una delle risposte è "
+                        "stato codificato in un formato diverso da Base64. Per favore, verifica le "
+                        "mail manualmente per verificare che non ci siano errori e in caso aggiungi al "
+                        f"codice sorgente un branch per l'encoding {_get_content_transfer_encoding(part)}"
+                    )
+                raw_csv_file = base64.b64decode(str(part.get_payload()))
+                self._csv = raw_csv_file.decode('utf-8')
+            elif main_type == 'text':
+                self._csv = part.get_payload()
+            else:
+                # TODO: Add Id
+                raise ValueError(
+                    "Il CSV allegato nella risposta API è in un formato "
+                    "non riconosciuto dal parser. Per favore, verifica manualmente "
+                    "la richiesta con id {req_id} dalle mail e risolvi eventuali "
+                    "conflitti. Il formato della risposta è {m_ty}".format(
+                        m_ty=main_type, req_id=self._req_id)
+                )
+        print("Risultato", self._csv)
+
+
 class APIRequestIssuer:
     """ Entità che si occupa di fare richiesta all'API ARPA a
     partire da una richiesta su Python.
@@ -564,8 +689,8 @@ class APIRequestIssuer:
 
     APIRequestIssuer.issue_request(
         [
-        {'stazione': <nome>, 'dati': [dato1, ...], 'intervallo': 'data1-data2'},
-        {'stazione': <nome>, 'dati': [dato1, ...], 'intervallo': 'data1-data2'}
+        {'stazione': <nome>, 'dati': [dato1, ...], 'intervallo': 'data1*data2'},
+        {'stazione': <nome>, 'dati': [dato1, ...], 'intervallo': 'data1*data2'}
         ]
         Questa entità si prende la responsabilità di dividere le richieste in
     mini batch da _max_request_number come da API dell'ARPA.
@@ -574,8 +699,13 @@ class APIRequestIssuer:
     delle richieste, di cui n_batch workers che fanno richieste all'ultimo
     processo che è l'oggetto IMAPManager.
     """
+    _arpa_api_url = 'https://www.arpa.piemonte.it/radar/open-scripts/richiesta_dati_gg.php?richiesta=1'
+    _arpa_api_table_name = 'richiesta_dati.dati_giornalieri'
 
-    def issue_request(self, request: list[dict], email: str):
+    def issue_request(self, request: list[dict], e_mail: str):
+        """ Invia una richiesta all'API ARPA. I dati richiesti verranno
+        recapitati all'email specificati e letti dai worker generati. """
+
         if not isinstance(request, typing.Iterable):
             raise ValueError(
                 "La richiesta dev'essere una lista di dizionari del tipo "
@@ -590,50 +720,163 @@ class APIRequestIssuer:
                 "correggi tutti i problemi evidenziati di seguito prima di fare "
                 "una nuova richiesta API: {issue}".format(issue=issue)
             )
-        batches = self._get_batches(request)
+        # Divide ulteriormente le richieste se la loro grandezza eccede la
+        # grandezza massima della richiesta API ARPA.
+        batches = self._maybe_partition_batches(request)
+        if batches is None:
+            raise ValueError(
+                "Una delle richieste API ARPA è fallita in quanto le grandezze "
+                "richieste sono nulle o mancanti. Per favore, controlla di aver "
+                "inserito correttamente le informazioni della richiesta."
+            )
+        packages = [
+            self._build_batch_data_rep(batch, e_mail)
+            for batch in batches
+        ]
+        req_ids, workers = [], []
+        executor = None
+        try:
+            import concurrent.futures
+            for package in packages:
+                req_id, _ = self._issue_arpa_api_request(
+                    data=package,
+                    address=APIRequestIssuer._arpa_api_url,
+                    table=APIRequestIssuer._arpa_api_table_name
+                )
+                req_ids.append(req_id)
+            with IMAPAccesser(imap_mail_address=e_mail, expected_ids=req_ids) as imap_serv:
+                with concurrent.futures.ThreadPoolExecutor(
+                        max_workers=len(packages) + 1  # Uno di più per il gestore IMAP
+                ) as executor:
+                    for req_id in req_ids:
+                        print("Spawnato un worker")
+                        latest_worker = executor.submit(APIWorker(req_id, imap_serv))
+                        workers.append(latest_worker)
+                    print("Chiamo l gestore")
+                    executor.submit(imap_serv)
+        except Exception as broad_exception:
+            for worker in workers:
+                worker.cancel()
+            if executor is not None:
+                executor.shutdown(cancel_futures=True)
+            raise apierrors.RequestError(
+                "Un errore fatale dell'API ha interrotto l'esecuzione "
+                "durante la fase di invio delle richieste al server ARPA. "
+                "Tutti i worker verranno eliminati. Per favore, verifica "
+                "non ci siano stati danni ai file di salvataggio. "
+                f"L'eccezione originale: {broad_exception}",
+                failed_request=request
+            )
 
-    def _get_batches(self, request: list[dict]):
-        pass
-        return None
+    @staticmethod
+    def _maybe_partition_batches(request_heap: list[dict]):
+        """ Verifica che tutte le richieste non superino il limite di
+        numeri di richieste in un unico POST dell'API ARPA. (Di norma
+        il limite vale cinque) """
 
-    def _validate_request(self, request):
-        pass
-        return None, None
+        def _compute_request_size(req):
+            # Nessun controllo
+            try:
+                return len(req['dati'])
+            except KeyError:
+                return None
 
-    def _build_data_rep(self, batch, email: str):
+        for request in request_heap.copy():
+            # Se la richiesta è nulla _compute_req_size ritorna None
+            size = _compute_request_size(request)
+            if not size:
+                raise ValueError(
+                    "Errore API: Una delle richieste è della dimensione sbagliata. "
+                    "Per favore, verifica che la richiesta sia corretta."
+                )
+            elif size > _MAX_API_ARPA_REQUESTS:
+                features = request['dati']
+                request_heap.remove(request)
+                # Partiziona la richiesta troppo lunga in mini richieste grandi _MAX_API
+                for new_batch in range(0, size, _MAX_API_ARPA_REQUESTS):
+                    copy = request.copy()
+                    copy['dati'] = features[:_MAX_API_ARPA_REQUESTS]
+                    features = features[_MAX_API_ARPA_REQUESTS:]
+                    request_heap.append(copy)
+        return request_heap
+
+    @staticmethod
+    def _validate_request(request_heap):
+        """ Controlla che la richiesta sia corretta prima d'inviarla all'ARPA
+        Ogni richiesta è della forma
+
+        {'stazione': <nome>, 'dati': [dato1, ...], 'intervallo': 'data1*data2'},
+
+        """
+        if any(req for req in request_heap if not isinstance(req, dict)):
+            raise ValueError(
+                "Errore API: uno dei gruppi nella richiesta non è del formato "
+                f"corretto. Per favore, verifica che la richiesta "
+                f"sia nella forma corretta."
+            )
+        issue = ''  # Nessuna anomalia inizialmente.
+        for request in request_heap:
+            try:
+                station = request['stazione']
+                print(station)
+                station_exists = ARPAJsonApiReader.station_exists(station)
+                print("station ex", station_exists)
+                if not station_exists:
+                    issue += f'il nome della stazione {station} è incorretto, '
+                    continue
+                recognized, failed = ARPAJsonApiReader.map_data_to_keys(request['dati'])
+                for grandezza in recognized:
+                    if not ARPAJsonApiReader.feature_is_avail_in_station(
+                            station, grandezza
+                    ):
+                        issue += f'la grandezza {grandezza} non esiste nella stazione {station}'
+                if failed:
+                    issue += f'le seguenti feature non sono state riconosciute: {failed}'
+            except KeyError:
+                issue += 'la richiesta non è formattata correttamente, '
+        return issue, bool(not issue)
+
+    @staticmethod
+    def _build_batch_data_rep(batch, e_mail: str):
         """ Crea la stringa di dati da inviare assieme alla richiesta
-        POST al server API ARPA. """
+        POST al server API ARPA. In quanto il metodo viene chiamato dopo
+        aver validato il payload, non fa alcun controllo sui dati. """
 
-        data_formatter = '{' +\
-            '"email":{api_email}, '.format(api_email=email) +\
-            '"data_inizio":{data_init}, ' \
-            '"data_fine":{data_fine}", ' \
-            '"richiedente":4, ' \
-            '"tipofile":"csv", ' \
-            '"parametri": {params}, ' \
-            '"stazioni":{stations}' \
-            '}'
-        pass
+        if not isinstance(batch, dict) or not isinstance(e_mail, str):
+            raise ValueError(
+                "Un errore interno dell'API ha portato al fallimento "
+                "della richiesta: possibile email incorretta."
+            )
+        data_init, data_fine = batch['intervallo'].split('*')
+        feature_string = ARPAJsonApiReader.feature_list_to_string(batch['dati'])
+        stazioni = ARPAJsonApiReader.station_name_to_id(batch['stazione'])
+        data_formatter = '{' + \
+                         f'"email":"{e_mail}", ' \
+                         f'"data_inizio":"{data_init}", ' \
+                         f'"data_fine":"{data_fine}", ' \
+                         '"richiedente":"4", ' \
+                         '"tipofile":"csv", ' \
+                         f'"parametri": ["{feature_string}"], ' \
+                         f'"stazioni":["{stazioni}"]' \
+                         '}'
+        return data_formatter
 
-    def _issue_arpa_api_request(self, data, table: str, address: str):
+    @staticmethod
+    def _issue_arpa_api_request(data, table: str, address: str):
         """ Manda una richiesta di POST all'API di ARPA e verifica che
         non sia avvenuto nessun errore. In caso di eccezione, ritorna
         un messaggio di errore esplicativo. Se nulla di sbagliato accade,
         ritorna il numero di richiesta dell'API ARPA."""
 
-        data = '{"email":"ggriverflow1@outlook.it","data_inizio":"2023-01-24","data_fine":"2023-04-26","richiedente":"4","tipofile":"csv","parametri":["IU"],"stazioni":["379"]}',
+        # data = '{"email":"ggriverflow1@outlook.it","data_inizio":"2023-01-24","data_fine":"2023-04-26","richiedente":"4","tipofile":"csv","parametri":["IU"],"stazioni":["379"]}',
         req_data = {'data': data, 'dest_table': table}
 
-        # response = requests.post(address, data=req_data)
+        response = requests.post(address, data=req_data)
 
         def _is_error_response(status_code):
             """ Verifica che la risposta non sia un errore del protocollo HTTPS. """
             first_err_code = 400
             return status_code >= first_err_code
-
-        class response:
-            status_code = 200
-            text = 'Errore 42coglione'
 
         if _is_error_response(response.status_code):
             raise requests.HTTPError(
@@ -645,25 +888,27 @@ class APIRequestIssuer:
 
             def _is_sql_error(source):
                 return re.compile(
-                    r'WHERE|ADD|AND|ANY|IF|CREATE|DATABASE|DROP|TABLE|UNION|UPDATE'
+                    r'WHERE|ADD|AND|ANY|IF|CREATE|DATABASE|DROP|TABLE|UNION|UPDATE|INSERT'
+                    r'|INTO|LINE'
                 ).findall(source)
 
             duplicate_keys_error = re.compile(r' +duplicate key value +')
             if duplicate_keys_error.findall(response.text):
                 raise apierrors.RequestError(
                     "La richiesta era già presente nel database interno di ARPA, impossibile "
-                    "richiedere ancora gli stessi dati. Perfavore, cambia la richiesta "
+                    "richiedere ancora gli stessi dati. Per favore, cambia la richiesta "
                     "associata al campo dati: {req_data}".format(req_data=req_data, id=None),
                     failed_request=req_data
                 )
             elif _is_sql_error(response.text):
                 raise apierrors.RequestError(
                     "Errore interno dell'API: la richiesta inviata con id={id} ha generato un errore "
-                    "del database ARPA. Perfavore, verifica la correttezza del codice sorgente o "
+                    "del database ARPA. Per favore, verifica la correttezza del codice sorgente o "
                     "verifica di aver inviato correttamente la richiesta. ".format(id=None),
                     failed_request=req_data
                 )
         try:
+            print(response.text)
             request_id = int(response.text)
         except ValueError:
             raise apierrors.RequestError(
@@ -672,7 +917,7 @@ class APIRequestIssuer:
                 "e che il server ARPA sia online.",
                 failed_request=req_data
             )
-
+        print(f"Ha avuto successo con id {request_id}")
         return request_id, response.status_code
 
 
@@ -770,11 +1015,12 @@ def arpa_data():
 
 
 if __name__ == '__main__':
-    # arpa_data()
 
-    # Il request issuer fa
-
-    with IMAPAccesser('ggriverflow1@outlook.it', [15, 23, 56]) as imap:
-        pass
-
-    ARPAJsonApiReader.feature_is_avail_in_station('', '')
+    req_issuer = APIRequestIssuer()
+    # {'stazione': <nome>, 'dati': [dato1, ...], 'intervallo': 'data1-data2'},
+    # "2023-01-24","data_fine":"2023-04-26"
+    req_issuer.issue_request(
+        [{'stazione': 'ACCEGLIO', 'dati': ['Humidity', 'Temp', 'Nev', 'Prec'],
+          'intervallo': '2023-01-2*2023-04-26'}],
+        'ggriverflow1@outlook.it'
+    )

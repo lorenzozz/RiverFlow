@@ -579,7 +579,8 @@ class Dataset:
         just_dates = [datapoint[date_i] for datapoint in src]
         missing = Utils.check_series_for_missing_days(
             just_dates,
-            d_format
+            d_format,
+            verbose=True
         )
         for m in missing:
             index, rep = Utils.find_first_before(
@@ -1168,8 +1169,8 @@ if __name__ == '__main__':
 
     k = Dataset()
     k.load_source(
-        EXAMPLESROOT + '/Meteo/LOZZOLO_giornalieri_2001_2022.csv',
-        '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};',
+        EXAMPLESROOT + '/Meteo/ALAGNA_giornalieri.csv',
+        '{Data};{PNove};{PZero};{Neve1};{Neve2};{Neve3};{TMedia};{TMax};{TMin};',
         has_missing_values='',
         time_series='Data',
         date_format='{day:02}/{month:02}/{year:04}',
@@ -1184,13 +1185,13 @@ if __name__ == '__main__':
         locale.atof(x) if x != '' else ''
     )
 
-    k.save_back([EXAMPLESROOT + '/Meteo/LOZZOLO_giornalieri_2001_2022Pad.csv'],
+    k.save_back([EXAMPLESROOT + '/Meteo/ALAGNA_giornalieriPad.csv'],
                 [
-                    '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};'
+                    '{Data};{PNove};{PZero};{nv};{ns};{ne};{TMedia};{TMax};{TMin};'
                 ],
                 )
 
-    # Bocchetta:
+    # Bocchetta:                  Forse?                                                     NOOOOOOOOOOOOOOO
     # '{Data};{PNove};{PZero};{Neve};{NeveS};{NeveAlt};{TempAvg};{TempMax};{TempMin};{VelMedia};{Raffica};{Durata};{Rad};'
 
     # Cellio
@@ -1202,5 +1203,14 @@ if __name__ == '__main__':
     # Rima
     # '{Data};{PNove};{PZero};{TempAvg};{TempMax};{TempMin};'
 
-    # Lozzolo
+    # Lozzolo                                          Nooooooooooooooooooooooo
     # '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{Vel};{Raf};{Dur};{Set};{Temp};'
+
+    # Alagna                    No     No        No
+    # '{Data};{PNove};{PZero};{Neve1};{Neve2};{Neve3};{TMedia};{TMax};{TMin};'
+
+    # Boccioleto
+    # '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{HMed};{HMin};{HMax};'
+
+    # Rassa
+    # '{Data};{PNove};{PZero};{TMedia};{TMax};{TMin};{HMed};{HMin};{HMax};'
