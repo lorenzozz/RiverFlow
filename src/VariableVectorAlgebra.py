@@ -34,8 +34,10 @@ class VariableVectorManager:
     def add_copy_of(self, variable_to_copy, new_label):
         # Performs a deep copy of variable <variable_to_copy> and adds
         # a new variable under label new_label
-        self.variables[variable_to_copy] = np.ndarray.copy(self.variables[new_label])
-        self.variables_dims[variable_to_copy] = np.size(self.variables[new_label])
+        self.variables[variable_to_copy] = np.ndarray.copy(
+            self.variables[new_label])
+        self.variables_dims[variable_to_copy] = np.size(
+            self.variables[new_label])
         if self.env:
             self.env[variable_to_copy] = self.variables[variable_to_copy]
 
@@ -47,7 +49,8 @@ class VariableVectorManager:
                               f"error as every variable is taken by value, not reference")
         try:
             if 'print(' in statement:
-                print("* ", eval(statement.split('print(')[1].split(')')[0].strip(), self.env))
+                print("* ", eval(statement.split('print(')
+                      [1].split(')')[0].strip(), self.env))
             else:
                 ref_var = statement.split('=', 1)[0].strip()
                 action = statement.split('=', 1)[1].strip()
@@ -62,7 +65,8 @@ class VariableVectorManager:
 
         except Exception as BroadException:
             # Attempt to give user a reasonable description of the occurred error
-            err_expl = self.get_useful_error_description(BroadException, statement)
+            err_expl = self.get_useful_error_description(
+                BroadException, statement)
             raise GenericMathError(err_expl)
 
     def get_useful_error_description(self, exception, statement):
@@ -79,7 +83,8 @@ class VariableVectorManager:
 
         # Unrecognized name referenced
         if isinstance(exception, NameError):
-            possible_matches = get_close_matches(exception.__str__(), list(self.env.keys()))
+            possible_matches = get_close_matches(
+                exception.__str__(), list(self.env.keys()))
             error_expl = f"Name <{exception.__str__()}> in statement \"{statement.strip()}\" not recognized. " + \
                          (f"Did you mean one of the following? {possible_matches}" if possible_matches
                           else "")
