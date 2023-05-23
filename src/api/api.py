@@ -11,7 +11,6 @@ If not copyrighted, NASA material may be reproduced and distributed without furt
  permission from NASA.
 
  """
-import modulefinder
 import re
 import shutil
 import time
@@ -350,49 +349,165 @@ class _EnvLabel:
         return str(self.fields)
 
 
+class CSVBatchMaker:
+    """ Una classe di utility che funge da container di tutti gli
+    elementi necessari a processare un batch di richieste, e in seguito
+    unificarle tutte in un unico csv. """
+
+    def __init__(self):
+        # Le due liste hanno lo stesso ordine.
+        self.requests_data = []
+        self.request_format = []
+        self.req_email = None
+        self.file_name = None
+
+        # Riservato a uso futuro. I token non riconosciuti possono
+        # venire aggiunti in questo dizionario.
+        self._future_args = {}
+        self.macro_area_name = '-Unspecified-'
+        self._final_form = None
+
+    def set_email(self, _email: str):
+        """ Aggiungi una mail come destinazione della risposta API. """
+        if not self.req_email:
+            self.req_email = _email
+        else:
+            raise apierrors.ParseError(
+                "Più di una dichiarazione di email era presente per una stessa "
+                "macro area. "
+            )
+
+    def add_request(self, req_data, format_string):
+        """ Aggiungi una richiesta alla pila delle richieste da gestire. """
+        if req_data and format_string:
+            self.requests_data.append(req_data)
+            self.request_format.append(format_string)
+
+    def add_area_name(self, key):
+        """ Aggiungi il nome dell'area come strumento di diagnostica. """
+        self.macro_area_name = key
+
+    def add_filepath(self, f_path):
+        """ Imposta il valore del file path."""
+        self.file_name = f_path
+
+    def add_generic(self, key, value):
+        """ Aggiungi una generica chiave in un dizionario interno. """
+        self._future_args.update({key: value})
+
+    def add_final_plan(self, plan):
+        """ Aggiungi la disposizione completa delle variabili nel csv finale. """
+        self._final_form = plan
+
+    def is_good(self):
+        return (
+                len(self.requests_data) == len(self.request_format)
+                and self.file_name is not None
+                and self.req_email is not None
+                and self.requests_data
+                and self.request_format
+        )
+
+    def launch(self):
+        pass
+
+
 def _text_list_to_py_list(text):
     """ Converte un elenco testuale in una lista python. """
-    if text.endswith(']'):
+    text = text.strip()
+    if text.endswith(']') or text[0] == '[':
         text = text.strip('[]}{')
-    return text.split(',')
+    return [k.strip() for k in text.split(',')]
 
 
-def _text_list_to_py_dic(text, sep=';'):
+def _text_list_to_py_dic(text, sep=';', strip=' \n'):
     """ Converte una lista su più linee in un dizionario python. """
     if not isinstance(text, list):
         text = text.split(',')
     res_dic = {}
     for line in text:
+        line = line.strip(''.join(strip))
         key, item = line.split(sep)
-        res_dic.update({key: item})
+        res_dic.update({key.strip(): item.strip()})
     return res_dic
 
 
 def parse_macro_area_decl(script, line_index):
+    """ TODO: docs """
 
-    area_name = script[line_index]
+    batch_req_handler = CSVBatchMaker()
+    batch_req_handler.add_area_name(script[line_index].split('#')[1])
+
+    def _glance_over_token(line):
+        return line + 1
+
     line_index = line_index + 1
     cur_tok_n, (_, accepting) = APIConfigEnv.get_token_tuple(
         script[line_index], line_index)
-    batch_req_handler = CSVBatchMaker()
-    while 'End' not in cur_tok_n:
-        if 'Label' in cur_tok_n:
-            # Le targhette non sono statement eseguibili.
-            line_index = line_index + 1
+    while cur_tok_n != 'End':
+        if cur_tok_n == 'Label':
+            line_index = _glance_over_token(line_index)  # Salta le targhette
         else:
             line_index = accepting(
                 script, line_index,
                 authority=batch_req_handler,
             )
-    return batch_req_handler
+        cur_tok_n, (_, accepting) = APIConfigEnv.get_token_tuple(
+            script[line_index], line_index)
+    # Salta il token di 'End'.
+    line_index = _glance_over_token(line_index)
+    return batch_req_handler, line_index
 
 
-def parse_req(script, line, authority):
-    pass
+def _make_py_dic_from_section(line, script):
+    """ Crea un dizionario python a partire da una sezione dello script. """
+    line = line + 1
+    next_t = APIConfigEnv.find_next_dollar_sign_tok(script, line)
+    p_list = _text_list_to_py_dic(script[line:line + next_t], ':', ' ;\n')
+    return p_list, next_t
 
 
-def parse_meta(script, line, authority):
-    pass
+def parse_req(script, line, authority: CSVBatchMaker):
+    """ Parse-a una richiesta $Request$ dallo script fornito.
+    Passa all'autorità i dati ottenuti dal parsing. Si fa notare
+    che i dati $Meta$ vengono letti da parse_meta e non da questa funzione. """
+    p_list, next_t = _make_py_dic_from_section(line, script)
+    # Salta la dichiarazione della sezione $Request$
+    if 'format_strings' not in p_list.keys():
+        raise apierrors.ParseError(
+            "E' necessario indicare una stringa di formato "
+            "dentro la richiesta. Per favore, correggi lo script."
+        )
+    f_string = _text_list_to_py_list(p_list['format_strings'])
+    try:
+        request = {
+            'stazione': p_list['stazione'],
+            'dati': _text_list_to_py_list(p_list['dati']),
+            'intervallo': p_list['intervallo']
+        }
+    except KeyError:
+        raise apierrors.ParseError(
+            "La richiesta non è corretta. Per favore verifica."
+        )
+    authority.add_request(request, f_string)
+    return line + next_t + 1
+
+
+def parse_meta(script, line, authority: CSVBatchMaker):
+    """ Parse-a una sezione di tipo meta e compila i dati all'interno
+    dell'autorità passata come argomento. """
+    p_list, next_t = _make_py_dic_from_section(line, script)
+    if (
+            not 'email_address' in p_list or
+            not 'filename' in p_list
+    ):
+        raise apierrors.ParseError("...")
+    authority.add_filepath(p_list['filename'])
+    authority.set_email(p_list['email_address'])
+    p_list.pop('filename'), p_list.pop('email_address')
+    for currently_unrec_kw, value in p_list.items():
+        authority.add_generic(currently_unrec_kw, value)
+    return next_t + line + 1
 
 
 class APIConfigEnv:
@@ -401,7 +516,7 @@ class APIConfigEnv:
     """
 
     # Configurazione della grammatica del parser
-    _sep_token = '$'
+    _se_token = '$'
     req_end_token = '}'
     req_begin_token = '{'
     req_closure = (req_begin_token, req_end_token)
@@ -409,10 +524,11 @@ class APIConfigEnv:
     _grammar = {
         'Meta': (re.compile(r'\$Meta\$'), parse_meta),  # Meta token
         'Request': (re.compile(r'\$Request\$'), parse_req),  # Request token
-        'GenericSection': (re.compile(r'\$[a-zA-Z]+\$'), None),
         'Label': (re.compile(r'\$Label\$ +(?P<lab_name>[a-zA-Z0-9]+)'), None),  # Label token
         'ChapterName': (re.compile(r'#[a-zA-Z0-9]+'), parse_macro_area_decl),  # Nome
+        'End': (re.compile(r'\$End\$'), None),  # End of section
         'Parenthood': (re.compile(r'->'), None),  # Operatore di parentela
+        'GenericSection': (re.compile(r'\$[a-zA-Z]+\$'), None),
     }
     _sections = {
         'MetaSec': _grammar['Meta'],
@@ -440,8 +556,9 @@ class APIConfigEnv:
         # Salta la dichiarazione della $label$ e della prossima sezione
         _glance_amount = 2
         find_next = label_decl + _glance_amount
-        next_tok = APIConfigEnv._find_next_dollar_sign_tok(lines, find_next)
+        next_tok = APIConfigEnv.find_next_dollar_sign_tok(lines, find_next)
         new_source = []
+
         for key, item in label.fields.items():
             new_source.append(str(key) + ':' + str(item) + ';\n')
         lines[find_next:find_next + next_tok] = new_source
@@ -470,7 +587,7 @@ class APIConfigEnv:
         return label_decl
 
     @staticmethod
-    def _find_next_dollar_sign_tok(script, from_i):
+    def find_next_dollar_sign_tok(script, from_i):
         """ Trova il prossimo token generico a partire dalla
         posizione from_i nello script passato come argomento.
         Se l'argomento non è già stato diviso in righe, allora
@@ -516,7 +633,7 @@ class APIConfigEnv:
                     lab_type = sec_type_code
                     break
             find_sec = beg_sec + 1
-            eos = APIConfigEnv._find_next_dollar_sign_tok(script, find_sec)
+            eos = APIConfigEnv.find_next_dollar_sign_tok(script, find_sec)
             if eos:
                 label_sec = ''.join(script[find_sec:eos + find_sec])
                 env = _EnvLabel(
@@ -533,8 +650,9 @@ class APIConfigEnv:
 
     @staticmethod
     def get_token_tuple(line: str, c_line_index):
-        """ Ricerca nella grammatica """
-
+        """ Ricerca nella grammatica uno dei token riconosciuti e
+        restituisci un tuple contenente il nome del token, la regex
+        che l'ha riconosciuto e l'azione di accept. """
         try:
             item_name, (rex, accepting) = next(
                 ((item, (r, ac)) for item, (r, ac) in APIConfigEnv._grammar.items()
@@ -564,6 +682,8 @@ class APIConfigEnv:
             script = script.split('\n')
 
         def _parsing_needed(line):
+            if line > len(script):
+                return False
             for remaining_line in script[line:]:
                 if not str.isspace(remaining_line):
                     return True
@@ -581,12 +701,15 @@ class APIConfigEnv:
                     "Valore atteso: dichiarazione di macro area, "
                     "ricevuto un valore effettivo diverso. ".format(line=c_line_index)
                 )
-            authority, c_line_index = accepting(c_line_index)
+            authority, c_line_index = accepting(script, c_line_index)
             if not authority.is_good():
                 raise apierrors.ParseError(
                     "Un errore ha impedito che l'esecuzione continuasse a partire dalla "
                     "linea {line}".format(line=c_line_index)
                 )
+            else:
+                print("Fatto un ciclo.")
+                authority.launch()
 
     def save(self, file_path: str, script=None):
         """ Salva lo script eventualmente modificato in un path """
