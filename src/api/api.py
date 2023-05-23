@@ -11,6 +11,7 @@ If not copyrighted, NASA material may be reproduced and distributed without furt
  permission from NASA.
 
  """
+import modulefinder
 import re
 import shutil
 import time
@@ -206,8 +207,8 @@ _MAX_API_ARPA_REQUESTS = 5
 
 
 def _feature_labels_to_request(features: list[str]):
-    """ Converti le grandezzi richieste nei codici dell'API dell'ARPA.
-    Qunado una grandezza non viene riconosciuta immediatamente, viene fatto
+    """ Converti le grandezze richieste nei codici dell'API dell'ARPA.
+    Quando una grandezza non viene riconosciuta immediatamente, viene fatto
     un controllo per verificare se appare negli alias. Se non appare, viene
     fatto il raise di un errore. """
     sym_features = ''
@@ -236,6 +237,390 @@ def _get_part_file_specs(part: email.message.Message):
     f_ext = re.compile(r'.*\.(?P<extension>.+)').findall(f_name)
 
     return f_name, f_ext
+
+
+_default_api_cache_mode = 0x1
+_override_api_cache_mode = 0x2
+
+
+def _make_api_cached(mode=_default_api_cache_mode):
+    def _cache_decorator(func):
+        _local_cache = {}
+
+        def cached_func(*args, **kwargs):
+            nonlocal _local_cache
+            if mode == _override_api_cache_mode:
+                if (
+                        _local_cache or
+                        isinstance(_local_cache, bool)
+                ):
+                    return _local_cache
+                else:
+                    cached_val = func(*args, **kwargs)
+                    # Sovrascrivi il dizionario di default.
+                    _local_cache = cached_val
+            elif mode == _default_api_cache_mode:
+                if args in _local_cache.keys():
+                    return _local_cache[args]
+                else:
+                    cached_val = func(*args, **kwargs)
+                    _local_cache.update({args: cached_val})
+
+        return cached_func
+
+    return _cache_decorator
+
+
+class _EnvLabel:
+    _REQ_LABEL = 0x12
+    _META_LABEL = 0x13
+    _DEFAULT_LABEL = 0x14
+    EMPTY_LABEL = 0x15
+    label_types = [_REQ_LABEL, _META_LABEL, _DEFAULT_LABEL]
+
+    def __init__(self, lab_type, label: str, raw: str, authority):
+        """ Inizializza un entità di tipo _EnvLabel """
+
+        self.label_type = lab_type
+        if lab_type not in _EnvLabel.label_types:
+            raise apierrors.ParseError(
+                "La targhetta specificata è incorretta. "
+            )
+        self.label = label
+        self._env = raw
+        if not authority:
+            raise apierrors.ParseError(
+                "Impossibile creare una targhetta orfana (l'autorità assegnata "
+                "non esiste o è stata eliminata)."
+            )
+        self._env_authority = authority
+        self.fields = self._initialize_fields(self._env)
+
+    def _sanitize_key(self, key):
+        if key not in self.fields:
+            raise apierrors.RequestError(
+                "Tentativo di fare riferimento al campo {key} della sezione "
+                "{label}. Questo campo non esiste all'interno della sezione.".format(
+                    key=key, label=self.label
+                ),
+                self.__getitem__.__name__
+            )
+        return True
+
+    def _request_update(self):
+        """ Richiedi all'autorità sul file di script di aggiornare i
+        propri valori. """
+        self._env_authority.update_from_label(self)
+
+    def __getitem__(self, item):
+        """ Permette di accedere facilmente ai membri di una sezione """
+        if self._sanitize_key(item):
+            return self.fields[item]
+
+    def __setitem__(self, key, value):
+        """ Permette di avere la sintassi comoda sezione['targhetta']=valore """
+        if self._sanitize_key(key):
+            self.fields[key] = value
+            self._request_update()
+
+    def _initialize_fields(self, raw: str):
+        """ Inizializza i campi della sezione distinguendo prima fra
+        sezioni regolari e sezioni di request, che per comodità sono
+        racchiuse fra dei separatori. L'effettivo parsing della lista
+        avviene, dopo una pulizia della stringa, nella dichiarazione di
+        fields. """
+
+        if self.label_type == _EnvLabel.EMPTY_LABEL:
+            return dict()
+        else:
+            raw = raw.strip()
+            fields = {}
+            if (self.label_type == _EnvLabel._REQ_LABEL and
+                    raw.strip().endswith(APIConfigEnv.req_end_token)):
+                raw = raw.strip(''.join(APIConfigEnv.req_closure))
+            items = [li for li in raw.split(';') if li and not str.isspace(li)]
+            for item in items:
+                field, field_value = (
+                    str(k.strip().replace('\'', '')) for k in item.split(':')
+                )
+                fields.update({field: field_value})
+            return fields
+
+    def __str__(self):
+        return str(self.fields)
+
+
+def _text_list_to_py_list(text):
+    """ Converte un elenco testuale in una lista python. """
+    if text.endswith(']'):
+        text = text.strip('[]}{')
+    return text.split(',')
+
+
+def _text_list_to_py_dic(text, sep=';'):
+    """ Converte una lista su più linee in un dizionario python. """
+    if not isinstance(text, list):
+        text = text.split(',')
+    res_dic = {}
+    for line in text:
+        key, item = line.split(sep)
+        res_dic.update({key: item})
+    return res_dic
+
+
+def parse_macro_area_decl(script, line_index):
+
+    area_name = script[line_index]
+    line_index = line_index + 1
+    cur_tok_n, (_, accepting) = APIConfigEnv.get_token_tuple(
+        script[line_index], line_index)
+    batch_req_handler = CSVBatchMaker()
+    while 'End' not in cur_tok_n:
+        if 'Label' in cur_tok_n:
+            # Le targhette non sono statement eseguibili.
+            line_index = line_index + 1
+        else:
+            line_index = accepting(
+                script, line_index,
+                authority=batch_req_handler,
+            )
+    return batch_req_handler
+
+
+def parse_req(script, line, authority):
+    pass
+
+
+def parse_meta(script, line, authority):
+    pass
+
+
+class APIConfigEnv:
+    """
+    TODO: Docs
+    """
+
+    # Configurazione della grammatica del parser
+    _sep_token = '$'
+    req_end_token = '}'
+    req_begin_token = '{'
+    req_closure = (req_begin_token, req_end_token)
+
+    _grammar = {
+        'Meta': (re.compile(r'\$Meta\$'), parse_meta),  # Meta token
+        'Request': (re.compile(r'\$Request\$'), parse_req),  # Request token
+        'GenericSection': (re.compile(r'\$[a-zA-Z]+\$'), None),
+        'Label': (re.compile(r'\$Label\$ +(?P<lab_name>[a-zA-Z0-9]+)'), None),  # Label token
+        'ChapterName': (re.compile(r'#[a-zA-Z0-9]+'), parse_macro_area_decl),  # Nome
+        'Parenthood': (re.compile(r'->'), None),  # Operatore di parentela
+    }
+    _sections = {
+        'MetaSec': _grammar['Meta'],
+        'RequestSec': _grammar['Request'],
+        'GenericSec': _grammar['GenericSection']
+    }
+
+    def __init__(self, script=None):
+        self._current_script = script
+
+    def update_from_label(self, label: _EnvLabel):
+        """ Aggiorna la sezione nello script corrente sulla base dei dati contenuti
+        dentro la targhetta env. """
+        if not self._current_script:
+            raise apierrors.ParseError(
+                "Impossibile modificare la sezione {sec} in quanto "
+                "non è stato associato nessuno script esplicitamente nel "
+                "costruttore.".format(sec=label.label)
+            )
+        lines = self._current_script
+        if not isinstance(lines, list):
+            lines = lines.split('\n')
+
+        label_decl = APIConfigEnv._find_label_line(lines, label.label)
+        # Salta la dichiarazione della $label$ e della prossima sezione
+        _glance_amount = 2
+        find_next = label_decl + _glance_amount
+        next_tok = APIConfigEnv._find_next_dollar_sign_tok(lines, find_next)
+        new_source = []
+        for key, item in label.fields.items():
+            new_source.append(str(key) + ':' + str(item) + ';\n')
+        lines[find_next:find_next + next_tok] = new_source
+
+        if not isinstance(self._current_script, list):
+            lines = '\n'.join(lines)
+        self._current_script = lines
+
+    @staticmethod
+    def _find_label_line(script, label_name):
+        """ Trova il numero di linea corrispondente alla targhetta col nome indicato
+        dentro label_name. L'indice della linea è assoluto (non relativo rispetto a
+        una posizione!) """
+
+        label_rex, _ = APIConfigEnv._grammar['Label']
+        label_decl = None
+        for line_no, line in enumerate(script):
+            # La linea contiene una dichiarazione di targhetta
+            maybe_match_group = label_rex.match(line)
+            if (
+                    maybe_match_group and
+                    label_name in maybe_match_group.group('lab_name')
+            ):
+                label_decl = line_no
+                break
+        return label_decl
+
+    @staticmethod
+    def _find_next_dollar_sign_tok(script, from_i):
+        """ Trova il prossimo token generico a partire dalla
+        posizione from_i nello script passato come argomento.
+        Se l'argomento non è già stato diviso in righe, allora
+        la funzione divide la lista con uno split lungo le newline
+        """
+        if not isinstance(script, list):
+            script = script.split('\n')
+        eos = None
+        generic_sec, _ = APIConfigEnv._grammar['GenericSection']
+        for line_no, line in enumerate(script[from_i:]):
+            if str.isspace(line):
+                continue
+            # Fermati alla prima sezione successiva
+            if generic_sec.findall(line):
+                eos = line_no
+                break
+
+        return eos
+
+    def get_label_section(self, label_name: str, script=None) -> _EnvLabel:
+        if not script and not self._current_script:
+            raise apierrors.ParseError(
+                "Fornisci uno script di default nel costruttore "
+                "dell'environment se non desideri inserirlo nella chiamata "
+                "alla funzione {func}".format(func=self.get_label_section.__name__)
+            )
+        elif not script:
+            script = self._current_script
+        label_decl = APIConfigEnv._find_label_line(script, label_name)
+        if not label_decl:
+            return _EnvLabel(
+                _EnvLabel.EMPTY_LABEL, 'Empty Section', str(),
+                None
+            )
+        else:
+            # Vai oltre la dichiarazione della targhetta e classifica la sezione
+            beg_sec = label_decl + 1
+            lab_type = None
+            for (section_rex, _), sec_type_code in zip(
+                    APIConfigEnv._sections.values(), _EnvLabel.label_types
+            ):
+                if section_rex.findall(script[beg_sec]):
+                    lab_type = sec_type_code
+                    break
+            find_sec = beg_sec + 1
+            eos = APIConfigEnv._find_next_dollar_sign_tok(script, find_sec)
+            if eos:
+                label_sec = ''.join(script[find_sec:eos + find_sec])
+                env = _EnvLabel(
+                    lab_type, label_name, label_sec,
+                    self  # Diventa l'autorità associata alla targhetta.
+                )
+            else:
+                raise apierrors.ParseError(
+                    "Il formato dello script non è corretto. Non è presente "
+                    "alcuna sezione dopo {sec}. E' possibile che lo script "
+                    "non sia terminato con un $End$. ".format(sec=script[beg_sec])
+                )
+            return env
+
+    @staticmethod
+    def get_token_tuple(line: str, c_line_index):
+        """ Ricerca nella grammatica """
+
+        try:
+            item_name, (rex, accepting) = next(
+                ((item, (r, ac)) for item, (r, ac) in APIConfigEnv._grammar.items()
+                 if r.findall(line)),
+                None
+            )
+        except TypeError:
+            raise apierrors.ParseError(
+                "Errore di sintassi alla linea {l_i}. Per favore, "
+                "verifica il codice sorgente.".format(l_i=c_line_index)
+            )
+        return item_name, (rex, accepting)
+
+    def execute(self, script=None):
+        # TODO: Docs
+        """ Esegui uno script """
+
+        if not script and self._current_script is not None:
+            script = self._current_script
+        elif not script:
+            raise apierrors.ParseError(
+                "Nessuno script è stato fornito nello statement di execute. Per favore, "
+                "se non provvedi uno script nel costruttore dell'oggetto specifica lo script "
+                "nella chiamata ad execute. "
+            )
+        if not isinstance(script, list):
+            script = script.split('\n')
+
+        def _parsing_needed(line):
+            for remaining_line in script[line:]:
+                if not str.isspace(remaining_line):
+                    return True
+            return False
+
+        c_line_index = 0
+        while _parsing_needed(c_line_index):
+            c_line = script[c_line_index]
+            tok_name, (_, accepting) = APIConfigEnv.get_token_tuple(c_line, c_line_index)
+            if 'ChapterName' not in tok_name:
+                # Solamente le dichiarazioni di macro area sono permesse in questa
+                # parte del parsing.
+                raise apierrors.ParseError(
+                    "Errore nel codice sorgente alla linea {line}. "
+                    "Valore atteso: dichiarazione di macro area, "
+                    "ricevuto un valore effettivo diverso. ".format(line=c_line_index)
+                )
+            authority, c_line_index = accepting(c_line_index)
+            if not authority.is_good():
+                raise apierrors.ParseError(
+                    "Un errore ha impedito che l'esecuzione continuasse a partire dalla "
+                    "linea {line}".format(line=c_line_index)
+                )
+
+    def save(self, file_path: str, script=None):
+        """ Salva lo script eventualmente modificato in un path """
+        if not script:
+            if not self._current_script:
+                raise apierrors.ParseError(
+                    "Nessuno script è associato alla richiesta di "
+                    "salvataggio nel path {path}".format(path=file_path)
+                )
+            else:
+                script = self._current_script
+        if not isinstance(script, list):
+            script = script.split('\n')
+        with open(file_path, 'w') as save_file:
+            save_file.writelines(script)
+
+
+class ARPACSVParser:
+    """ Entità addetta al parsing dei CSV di origine ARPA. Le sezioni
+    riconosciute sono presenti in una lista di regex comune a tutte le entità
+    ARPACSVParser. Si fa notare che non tutti i CSV presentano gli stessi campi,
+    sfortunatamente. """
+
+    recognized_fields = {
+        re.compile(r'Codice richiesta'): 'CodiceRichiesta',
+        re.compile(r'Quota'): 'Quota'
+    }
+
+    class ARPACSV:
+        pass
+
+    @staticmethod
+    def parse_csv(csv) -> ARPACSV:
+        pass
 
 
 class ARPAJsonApiReader:
@@ -357,7 +742,7 @@ class IMAPAccesser:
     _imap_port = 993
     _imap_server_address = 'imap-mail.outlook.com'
 
-    def __init__(self, imap_mail_address: str, expected_ids: list[int]):
+    def __init__(self, imap_mail_address: str, expected_ids: list[int], m_support=False):
         """
         Inizializza un istanza di un IMAPAccesser.
 
@@ -367,6 +752,7 @@ class IMAPAccesser:
             id non saranno ricevuti correttamente.
         """
 
+        self._is_multi_treading_safe = m_support
         self._available_request_ids = dict()
         self._remaining_expected_ids = expected_ids
         self._available_id_lock = threading.Lock()
@@ -461,7 +847,7 @@ class IMAPAccesser:
                 "Se la funzione è stata chiamata indipendentemente dal manager, verifica "
                 "che sia avvenuto il login e che il lock sia riservato."
             )
-        if not self._available_id_lock.locked():
+        if not self._available_id_lock.locked() and self._is_multi_treading_safe:
             raise RuntimeError(
                 "Non è possibile chiamare la funzione {func} senza aver prima "
                 "ottenuto il lock per gli id richiesti. Per favore, non chiamare "
@@ -476,12 +862,12 @@ class IMAPAccesser:
                 "rallentare il funzionamento dell'API. Per favore, accedi manualmente alle "
                 "mail e rimuovi le mail non lette inutili."
             )
-
         ids, mails = [], []
+        unread_emails = unread_emails[0].decode('utf-8').split(' ')
         for mail_index in unread_emails:
-            # Il protocollo IMAP definisce una lista d'indici vuoti l'elemento [b'']
+            # Il protocollo IMAP definisce una lista d'indici vuota come l'elemento [b'']
             if mail_index:
-                typ, data = self._imap.fetch(mail_index.decode('utf-8'), '(RFC822)')
+                typ, data = self._imap.fetch(mail_index, '(RFC822)')
                 packet, flags = data
                 protocol_info, raw_email = packet
                 mail_string = raw_email.decode('utf-8')
@@ -497,7 +883,34 @@ class IMAPAccesser:
 
         return ids, mails
 
-    def __call__(self):
+    def _maybe_read_mail_if_avail(self):
+        """ Leggi direttamente il server IMAP e verifica se nuove email sono disponibili.
+        Non fa alcun controllo sulla validità dei lock. Per un accesso thread-safe usare
+        l'altra funzione. """
+
+        gotten_ids, mails = self._read_available_mails()
+        id_m_pairs = zip(gotten_ids, mails)
+        print("Id email presi:", gotten_ids)
+        print("Email prese: ", mails)
+        if gotten_ids and mails:
+            print("Coppie:", id_m_pairs)
+            for _id, _mail in id_m_pairs:
+                if not _id:
+                    raise apierrors.RequestError(
+                        "Una mail inaspettata è arrivata al server IMAP associato "
+                        "all'API. La mail inaspettata non verrà inclusa nel successivo "
+                        "parsing dei CSV. Per favore, verifica che la richiesta sia stata "
+                        "effettuata correttamente.",
+                        failed_request=f'Richiesta con id {_id}, mail={_mail}'
+                    )
+                self._remaining_expected_ids.remove(_id)
+                # Aggiungi una nuova coppia al dizionario e rimuovi l'id recuperato
+                # dalla lista degli id mancanti.
+                print("Updato le richieste... ", self._available_request_ids)
+                self._available_request_ids.update({_id: _mail})
+                print("Updato le richieste... ", self._available_request_ids)
+
+    def start_m_thread_accesser(self):
         """ Routine che riceve dal server IMAP tutte le email che il gestore si
         aspetta. Blocca l'esecuzione (multithread) finché tutte le email richieste
         non sono ricevute e assegnate ai worker. """
@@ -511,29 +924,9 @@ class IMAPAccesser:
             )
         while self._remaining_expected_ids:
             with self._available_id_lock:
-                print("Sono l'accesser, ora controllo le email che ho trovato... ")
-                time.sleep(5)
                 # È possibile che più di una mail sia arrivata,
                 # perciò gotten_ids e mails sono liste.
-                gotten_ids, mails = self._read_available_mails()
-                id_m_pairs = zip(gotten_ids, mails)
-                print("Id email presi:", gotten_ids)
-                print("Email prese: ", mails)
-                if gotten_ids and mails:
-                    for req_id, m in id_m_pairs:
-                        if req_id not in self._remaining_expected_ids:
-                            raise apierrors.RequestError(
-                                "Una mail inaspettata è arrivata al server IMAP associato "
-                                "all'API. La mail inaspettata non verrà inclusa nel successivo "
-                                "parsing dei CSV. Per favore, verifica che la richiesta sia stata "
-                                "effettuata correttamente.",
-                                failed_request=f'Richiesta con id {req_id}, mail={m}'
-                            )
-                    for _id, _mail in id_m_pairs:
-                        self._remaining_expected_ids.remove(_id)
-                        # Aggiungi una nuova coppia al dizionario e rimuovi l'id recuperato
-                        # dalla lista degli id mancanti.
-                        self._available_request_ids.update({_id: _mail})
+                self._maybe_read_mail_if_avail()
         if self._remaining_expected_ids:
             raise ValueError(
                 "Per un errore sconosciuto rimangono degli id presenti dopo "
@@ -542,6 +935,17 @@ class IMAPAccesser:
                 "danneggiato."
             )
         return
+
+    def __call__(self, *args, **kwargs):
+        """ Semplice accesser per la funzione _maybe_get_if_available. Non fa alcun
+        controllo sui Lock. Per funzionalità thread-safe si usi le funzionalità
+        multithread-safe dell'accesser."""
+        self._maybe_read_mail_if_avail()
+
+    @property
+    def fetched_emails(self):
+        """ Accesser per il membro privato self._available_request_ids. """
+        return self._available_request_ids
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """ Esci dal context manager. Se un eccezione è avvenuta, segnala un warning all'utente.
@@ -620,26 +1024,57 @@ class APIWorker:
     """ L'entità che si occupa di leggere la richiesta API dal server IMAP interrogando
     l'IMAP manager, si occupa di parse-are la mail e salvare il CSV in memoria. """
 
-    def __init__(self, req_id, imap_manager):
+    def __init__(self, req_ids, imap_manager):
         """ Inizializza un entità assegnata a salvare la richiesta API in locale. """
-        self._assigned_api_response = None
-        self._req_id = req_id
+        self._assigned_api_responses = None
+        self._req_ids = req_ids.copy()
+        self._missing_responses = req_ids.copy()
         self._imap_aut: IMAPAccesser = imap_manager
-        self._csv = None
+        self._csvs = list()
 
-    def __call__(self):
-        """ Continua a prompt-are il server IMAP cercando di ottenere i dati. """
-        print("Worker mi hanno chiamato..")
-        while self._assigned_api_response is None:
-            print("Sono un worker, ho preso il lock e ora controllo...")
-            time.sleep(4)
-            self._assigned_api_response = self._imap_aut.maybe_get_email_if_available(
-                self._req_id
-            )
-        self._parse_message()
+    def _maybe_mark_new_as_received(self, newly_gotten_id=None):
+        """ Funzione di updater """
+        if newly_gotten_id in self._missing_responses:
+            self._missing_responses.remove(newly_gotten_id)
 
-    def _parse_message(self):
+    def __call__(self, flood=False):
+        """ Continua a prompt-are il server IMAP cercando di ottenere i dati.
+        La chiamata al worker è bloccante. Per procedere nell'esecuzione indipendentemente
+        dalla chiamata, si usi uno scheduler o delle funzionalità di multi-threading. """
+
+        missing_requests = self._missing_responses
+        print(missing_requests)
+        while missing_requests:
+            _time_sleep_amt = 5
+            print("Il worker sta facendo una nuova richiesta...")
+            if not flood:
+                time.sleep(_time_sleep_amt)
+            # Aggiorna la repository delle mail lette cercandone di nuove.
+            self._imap_aut()
+            maybe_new_emails = self._imap_aut.fetched_emails
+            print("INIzio il loop..")
+            for mis_req in missing_requests:
+                print("maybe New emails: ", list(maybe_new_emails.keys()))
+                if mis_req in maybe_new_emails:
+                    print("******")
+                    print("Ho ricevuto una email che mi mancava.")
+                    print("******")
+
+                    self._parse_message(maybe_new_emails[mis_req], mis_req)
+                    # Rimuovi la richiesta dalla lista delle richieste mancanti.
+            print("Mancanti prima di cancellare...")
+            for m_id in maybe_new_emails:
+                print("Ho riceuto m_id", m_id)
+                self._maybe_mark_new_as_received(m_id)
+            missing_requests = self._missing_responses
+            print("Mancanti dopo aver candcellato...")
+            print("Nuove richieste mancanti..", missing_requests)
+
+        print("Finito normalmente. ")
+
+    def _parse_message(self, response: email.message.Message, req_id: str):
         """ Parsa il messaggio email e salvalo in memoria. """
+        print("Parso il messaggio....")
 
         def _get_content_transfer_encoding(email_part: email.message.Message):
             """ Ottieni il tipo di encoding dell'allegato presente nella mail """
@@ -648,7 +1083,7 @@ class APIWorker:
             else:
                 return None
 
-        for part in self._assigned_api_response.walk():
+        for part in response.walk():
             # Fai cast a string per evitare 'None'
             file_name = str(part.get_filename())
             file_extension = re.compile(r'.*\.(?P<extension>.+)').findall(file_name)
@@ -666,19 +1101,23 @@ class APIWorker:
                         f"codice sorgente un branch per l'encoding {_get_content_transfer_encoding(part)}"
                     )
                 raw_csv_file = base64.b64decode(str(part.get_payload()))
-                self._csv = raw_csv_file.decode('utf-8')
+                payload = raw_csv_file.decode('utf-8')
+                self._csvs.append(payload)
             elif main_type == 'text':
-                self._csv = part.get_payload()
+                payload = part.get_payload()
+                self._csvs.append(payload)
             else:
-                # TODO: Add Id
                 raise ValueError(
                     "Il CSV allegato nella risposta API è in un formato "
                     "non riconosciuto dal parser. Per favore, verifica manualmente "
                     "la richiesta con id {req_id} dalle mail e risolvi eventuali "
                     "conflitti. Il formato della risposta è {m_ty}".format(
-                        m_ty=main_type, req_id=self._req_id)
+                        m_ty=main_type, req_id=req_id)
                 )
-        print("Risultato", self._csv)
+            self._csvs.append(payload)
+
+        print("Nuovi csv: ", self._csvs)
+        return
 
 
 class APIRequestIssuer:
@@ -699,13 +1138,14 @@ class APIRequestIssuer:
     delle richieste, di cui n_batch workers che fanno richieste all'ultimo
     processo che è l'oggetto IMAPManager.
     """
+    # TODO: Add to gitignore.
     _arpa_api_url = 'https://www.arpa.piemonte.it/radar/open-scripts/richiesta_dati_gg.php?richiesta=1'
     _arpa_api_table_name = 'richiesta_dati.dati_giornalieri'
 
     def issue_request(self, request: list[dict], e_mail: str):
         """ Invia una richiesta all'API ARPA. I dati richiesti verranno
         recapitati all'email specificati e letti dai worker generati. """
-
+        print("Ho fatto la richiesta all'arpa.")
         if not isinstance(request, typing.Iterable):
             raise ValueError(
                 "La richiesta dev'essere una lista di dizionari del tipo "
@@ -736,24 +1176,37 @@ class APIRequestIssuer:
         req_ids, workers = [], []
         executor = None
         try:
-            import concurrent.futures
             for package in packages:
+                print("Sto per fare la richiesta...")
                 req_id, _ = self._issue_arpa_api_request(
                     data=package,
                     address=APIRequestIssuer._arpa_api_url,
                     table=APIRequestIssuer._arpa_api_table_name
                 )
                 req_ids.append(req_id)
+            import concurrent.futures
             with IMAPAccesser(imap_mail_address=e_mail, expected_ids=req_ids) as imap_serv:
+                _just_single_access = 1
+                print("Sto inizializzando il threadpool")
                 with concurrent.futures.ThreadPoolExecutor(
-                        max_workers=len(packages) + 1  # Uno di più per il gestore IMAP
+                        max_workers=_just_single_access
                 ) as executor:
-                    for req_id in req_ids:
-                        print("Spawnato un worker")
-                        latest_worker = executor.submit(APIWorker(req_id, imap_serv))
-                        workers.append(latest_worker)
-                    print("Chiamo l gestore")
-                    executor.submit(imap_serv)
+                    # Per evitare che la chiamata sia bloccante, usa una
+                    # funzionalità multi-thread
+                    print("Ho submitatto il worker")
+                    executor.submit(APIWorker(req_ids, imap_serv))
+
+                """ VERSIONING: SCRAPPED MULTITHREADING SECTION.
+                FUTURES: ADD IN 1.01
+                Proposal: 
+                1) with concurrent.futures.ThreadPoolExecutor(
+                2)         max_workers=len(packages) + 1  # Uno di più per il gestore IMAP
+                3) ) as executor:
+                4)     for req_id in req_ids:
+                5)         latest_worker = executor.submit(APIWorker(req_id, imap_serv))
+                6)         workers.append(latest_worker)
+                7)      executor.submit(imap_serv)              """
+
         except Exception as broad_exception:
             for worker in workers:
                 worker.cancel()
@@ -868,9 +1321,7 @@ class APIRequestIssuer:
         un messaggio di errore esplicativo. Se nulla di sbagliato accade,
         ritorna il numero di richiesta dell'API ARPA."""
 
-        # data = '{"email":"ggriverflow1@outlook.it","data_inizio":"2023-01-24","data_fine":"2023-04-26","richiedente":"4","tipofile":"csv","parametri":["IU"],"stazioni":["379"]}',
         req_data = {'data': data, 'dest_table': table}
-
         response = requests.post(address, data=req_data)
 
         def _is_error_response(status_code):
@@ -888,8 +1339,8 @@ class APIRequestIssuer:
 
             def _is_sql_error(source):
                 return re.compile(
-                    r'WHERE|ADD|AND|ANY|IF|CREATE|DATABASE|DROP|TABLE|UNION|UPDATE|INSERT'
-                    r'|INTO|LINE'
+                    r'WHERE|ADD|AND|ANY|IF|CREATE|DATABASE|DROP|'
+                    r'TABLE|UNION|UPDATE|INSERT|INTO|LINE'
                 ).findall(source)
 
             duplicate_keys_error = re.compile(r' +duplicate key value +')
@@ -1015,12 +1466,23 @@ def arpa_data():
 
 
 if __name__ == '__main__':
-
     req_issuer = APIRequestIssuer()
     # {'stazione': <nome>, 'dati': [dato1, ...], 'intervallo': 'data1-data2'},
     # "2023-01-24","data_fine":"2023-04-26"
+
+    """
     req_issuer.issue_request(
-        [{'stazione': 'ACCEGLIO', 'dati': ['Humidity', 'Temp', 'Nev', 'Prec'],
-          'intervallo': '2023-01-2*2023-04-26'}],
+        # "data_inizio":"2023-01-24","data_fine":"2023-04-26","richiedente":"4","tipofile":"csv","parametri":["IU"],"stazioni":["379"]
+        [{'stazione': 'ANDRATE PINALBA', 'dati': ['Prec'],
+          'intervallo': '2023-02-12*2023-04-28'}],
         'ggriverflow1@outlook.it'
     )
+    """
+
+    with open('C:/Users/picul/OneDrive/Documenti/apiconfig.io', 'r') as s:
+        sc = s.readlines()
+        new_script = APIConfigEnv(sc)
+        sec = new_script.get_label_section('StazioneBocchetta')
+        sec['intervallo'] = 'ciaonee'
+        new_script.save('C:/Users/picul/OneDrive/Documenti/apiconfigupdate.io')
+        new_script.execute()

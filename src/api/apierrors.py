@@ -10,3 +10,15 @@ class RequestError(Exception):
 
     def __str__(self):
         return self._reason
+
+
+class ParseError(Exception):
+    """ Errore di parsing incorretto di uno o più file CSV ricevuti durante
+    l'operazione dell'API sui dati in arrivo. """
+
+    def __init__(self, reason):
+        self._reason = reason
+
+    def __str__(self):
+        return self._reason
+
