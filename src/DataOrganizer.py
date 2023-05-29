@@ -478,7 +478,7 @@ class DataFormatReader:
             current_row = current_row + 1
 
     @staticmethod
-    def parse_file(inp_file: str, format_list: list):
+    def parse_file(inp_file: str, format_list: list, delim: str = ';'):
         """ Parses input file according to format list specified into format_list.
 
         The format list can be:
@@ -496,6 +496,7 @@ class DataFormatReader:
 
           :param inp_file: The file path of the input file
           :param format_list: A format list used in the parsing operation
+          :param delim: Il delimitatore fra gli elementi nel csv
           :return: The data fields as requested as a python iterable.
 
         """
@@ -516,7 +517,7 @@ class DataFormatReader:
                                     "a valid filepath, found {}".__format__(inp_file))
 
         with open(inp_file, "r") as csv_file:
-            lines = csv.reader(csv_file, dialect='excel', delimiter=';')
+            lines = csv.reader(csv_file, dialect='excel', delimiter=delim)
 
             # Sniff over a few lines of target file, if it contains a header
             # glance over it
@@ -539,9 +540,9 @@ class DataFormatReader:
                 return parsed_data
 
             data = [
-                _parse_csv_line(format_list, ';'.join(line))
+                _parse_csv_line(format_list, delim.join(line))
                 for line in lines
-                if not str.isspace(';'.join(line)) and line is not None
+                if not str.isspace(delim.join(line)) and line is not None
             ]
 
         return data

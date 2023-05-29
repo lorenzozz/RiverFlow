@@ -22,7 +22,7 @@ import imaplib
 import base64
 import threading
 
-from typing import Tuple
+from typing import Tuple, Union, Any
 from os import path
 from datetime import date
 from dateutil.rrule import rrule, DAILY
@@ -349,6 +349,111 @@ class _EnvLabel:
         return str(self.fields)
 
 
+class ARPACSV:
+    """ Entità addetta al parsing dei CSV di origine ARPA. Le sezioni
+    riconosciute sono presenti in una lista di regex comune a tutte le entità
+    ARPACSVParser. Si fa notare che non tutti i CSV presentano gli stessi campi,
+    sfortunatamente. """
+
+    recognized_fields = {
+        re.compile(r'Codice richiesta *, *(?P<CodiceRichiesta>[0-9]+)'): 'CodiceRichiesta',
+        re.compile(r'Codice stazione *, *(?P<CodiceStazione>[0-9]+)'): 'CodiceStazione',
+        re.compile(r'Localita\' *, *(?P<Localita>[A-Z]+)'): 'Localita',
+        re.compile(r'Periodo *, *(?P<Periodo>[0-9]+-[0-9]+-[01] / .+)'): 'Periodo',
+        re.compile(r'.*'): 'Unrecognized'
+    }
+
+    def __init__(self):
+        """ """
+        self.header = dict()
+        self.data = None
+        self.footer = None
+        self.heading = None
+        self.variables = None
+        self._raw_payload = None
+
+    @staticmethod
+    def sanitize_csv_return_lines_sep(csv: str):
+        """ Rimuovi newline inutili a fine file e verifica
+        che la risposta API non sia corrotta. Ritorna il
+        separatore rilevato all'interno del file CSV. """
+        if (
+                csv is not None and
+                len(csv) > 0
+        ):
+            csv = csv.strip()
+            _crlf_threshold = 8
+            _crlf = '\r\n'
+            _lf = '\n'
+            if csv.count(_crlf) > _crlf_threshold:
+                lines = csv.split(_crlf)
+            else:
+                lines = csv.split(_lf)
+            lines = [li for li in lines if not str.isspace(li) and li]
+            possible_seps = ',;:'
+            _sep_threshold = 16
+            for sep in possible_seps:
+                if csv.count(sep) > _sep_threshold:
+                    return sep, lines
+        return None, None
+
+    @staticmethod
+    def clean_csv_lines(csv: list):
+        """ """
+        for line_no in range(len(csv)):
+            csv[line_no] = csv[line_no].replace(' ', '')
+        return csv
+
+    @staticmethod
+    def parse_csv(csv: str):
+        """ Leggi un csv di risposta arpa e dividilo nel suo
+        header e nei dati effettivi. """
+
+        sep, lines = ARPACSV.sanitize_csv_return_lines_sep(csv)
+        if not sep:
+            raise ValueError(
+                "Uno dei csv di richiesta è non valido. Verifica "
+                "le email."
+            )
+
+        def _get_field(c_line):
+            return next(
+                ((f_rex, f_name) for f_rex, f_name in
+                 ARPACSV.recognized_fields.items() if
+                 f_rex.findall(c_line)),
+                None
+            )
+
+        _has_footer = False
+        _begin_of_data = None
+        ret_csv_obj = ARPACSV()
+        ret_csv_obj._raw_payload = csv
+        csv_data_line = re.compile(r' *\d+/\d+/\d+ *,.*')
+        for line_no, line in enumerate(lines):
+            field_re, name = _get_field(line)
+            if csv_data_line.findall(line):
+                _begin_of_data = line_no
+                footer = re.compile(r'Elaborato.+')
+                heading = re.compile(r'[.+,]+')
+                if heading.match(csv[line_no - 1]):
+                    ret_csv_obj.header = lines[line_no - 1]
+                if footer.match(lines[-1]):
+                    _has_footer = True
+                    ret_csv_obj.footer = lines[-1]
+                break
+            elif name == 'Unrecognized':
+                continue
+            else:
+                data = field_re.match(line).group(name)
+                ret_csv_obj.header[name] = data
+        data: list = lines[_begin_of_data:]
+        if _has_footer:
+            data.pop(-1)
+        data = ARPACSV.clean_csv_lines(data)
+        ret_csv_obj.data = data
+        return ret_csv_obj
+
+
 class CSVBatchMaker:
     """ Una classe di utility che funge da container di tutti gli
     elementi necessari a processare un batch di richieste, e in seguito
@@ -373,8 +478,8 @@ class CSVBatchMaker:
             self.req_email = _email
         else:
             raise apierrors.ParseError(
-                "Più di una dichiarazione di email era presente per una stessa "
-                "macro area. "
+                "Più di una dichiarazione di email era presente per "
+                "una stessa macro area. "
             )
 
     def add_request(self, req_data, format_string):
@@ -400,34 +505,128 @@ class CSVBatchMaker:
         self._final_form = plan
 
     def is_good(self):
-        return (
+        is_ok = (
                 len(self.requests_data) == len(self.request_format)
                 and self.file_name is not None
                 and self.req_email is not None
                 and self.requests_data
                 and self.request_format
         )
+        return is_ok
 
-    def launch(self):
-        pass
+    @staticmethod
+    def parse_csv_(lines: list[str], format_list: list[str], delim: str = ';'):
+        """ """
+        def _parse_csv_line(format_string: list[str], line: str):
+            p_data: list[Union[str, Any]] = []
+            # Cut head of line
+            first, maj, end = format_string[0], format_string[:-1], format_string[-1]
+            if first:
+                line = line.split(first, 1)[1]
+            for sep in maj:
+                if sep:
+                    line = line.split(sep, 1)
+                    p_data.append(line[0])
+                    line = line[1]
+            if not end:
+                p_data.append(line)
+            return p_data
+        data = [
+            _parse_csv_line(format_list, line)
+            for line in lines
+            if not str.isspace(delim.join(line)) and line
+        ]
+        return data
+
+    def launch(self, write_header=False):
+        """ """
+
+        print(self.requests_data)
+        print(self.request_format)
+        print(self.req_email)
+
+        def _get_var_vec_naive(parsed_lines: list, col_i: int):
+            """ Ottieni una lista contenente tutti i valori ottenuti da una
+            variabile con indice col_i dentro una lista dei nomi. """
+            return [line[col_i] for line in parsed_lines]
+
+        def _get_names_and_seps(format_string: str):
+            """ Ottieni nomi e separatori da una stringa di formato. """
+            splits = [a for arg in format_string.split('{') for a in arg.split('}')]
+            return splits[1::2], splits[::2]
+        issuer = APIRequestIssuer()
+        defined_vars = {}
+        import concurrent.futures as ft
+        for req_packet, format_str_list in zip(
+                self.requests_data,
+                self.request_format
+        ):
+            worker: APIWorker
+            future: ft.Future
+            future, worker = issuer.issue_request([req_packet], self.req_email)
+            r = future.result()
+            for csv, f_string in zip(worker.csvs, format_str_list):
+                csv = ARPACSV.parse_csv(csv)
+                print(f_string)
+                names, seps = _get_names_and_seps(format_string=f_string)
+                print(names, seps)
+                csv_parsed = CSVBatchMaker.parse_csv_(lines=csv.data, format_list=seps, delim=',')
+                for name_i, name in enumerate(names):
+                    defined_vars.update({name: _get_var_vec_naive(csv_parsed, name_i)})
+            print("Variabili fin'ora:", defined_vars)
+
+        save_f_ns, _ = _get_names_and_seps(self._final_form)
+
+        def _fill_rows(name_env: dict, required_names: list[str]):
+            """ """
+            col_height = len(name_env[next(name_env.keys().__iter__())])
+            final_rows = []
+
+            def _fill_row(col_i: int):
+                return [name_env[n][col_i] for n in required_names]
+            for column in range(col_height):
+                final_rows.append(_fill_row(col_i=column))
+            return final_rows
+        new_header = ','.join(save_f_ns)
+        CSVBatchMaker._validate_csvs_length_maybe_issue_warning(def_vars=defined_vars)
+        final_csv = _fill_rows(defined_vars, required_names=save_f_ns)
+        from csv import writer
+        with open(self.file_name, 'w', newline='') as save_file:
+            if write_header:
+                save_file.write(new_header)
+            wr = writer(save_file)
+            wr.writerows(final_csv)
+
+    @staticmethod
+    def _validate_csvs_length_maybe_issue_warning(def_vars: dict[str, list]):
+        """ Avvisa l'utente se sono presenti variabili di lunghezze
+        diverse all'interno del batch. """
+        if def_vars.items():
+            all_lengths = set([len(v) for v in def_vars])
+            if len(all_lengths) > 1:
+                from warnings import warn
+                warn("Nel batch di CSV richiesti sono presenti "
+                     "dati di lunghezze eterogenee. ")
+        return
 
 
-def _text_list_to_py_list(text):
+def _text_list_to_py_list(text, sep=','):
     """ Converte un elenco testuale in una lista python. """
     text = text.strip()
     if text.endswith(']') or text[0] == '[':
-        text = text.strip('[]}{')
-    return [k.strip() for k in text.split(',')]
+        text = text.strip('[]')
+    return [k.strip() for k in text.split(sep)]
 
 
 def _text_list_to_py_dic(text, sep=';', strip=' \n'):
+    print(text)
     """ Converte una lista su più linee in un dizionario python. """
     if not isinstance(text, list):
         text = text.split(',')
     res_dic = {}
     for line in text:
         line = line.strip(''.join(strip))
-        key, item = line.split(sep)
+        key, item = line.split(sep, 1)
         res_dic.update({key.strip(): item.strip()})
     return res_dic
 
@@ -478,7 +677,7 @@ def parse_req(script, line, authority: CSVBatchMaker):
             "E' necessario indicare una stringa di formato "
             "dentro la richiesta. Per favore, correggi lo script."
         )
-    f_string = _text_list_to_py_list(p_list['format_strings'])
+    f_string = _text_list_to_py_list(p_list['format_strings'], sep='@')
     try:
         request = {
             'stazione': p_list['stazione'],
@@ -499,11 +698,13 @@ def parse_meta(script, line, authority: CSVBatchMaker):
     p_list, next_t = _make_py_dic_from_section(line, script)
     if (
             not 'email_address' in p_list or
-            not 'filename' in p_list
+            not 'filename' in p_list or
+            not 'final_form' in p_list
     ):
         raise apierrors.ParseError("...")
     authority.add_filepath(p_list['filename'])
     authority.set_email(p_list['email_address'])
+    authority.add_final_plan(p_list['final_form'])
     p_list.pop('filename'), p_list.pop('email_address')
     for currently_unrec_kw, value in p_list.items():
         authority.add_generic(currently_unrec_kw, value)
@@ -708,7 +909,6 @@ class APIConfigEnv:
                     "linea {line}".format(line=c_line_index)
                 )
             else:
-                print("Fatto un ciclo.")
                 authority.launch()
 
     def save(self, file_path: str, script=None):
@@ -725,25 +925,6 @@ class APIConfigEnv:
             script = script.split('\n')
         with open(file_path, 'w') as save_file:
             save_file.writelines(script)
-
-
-class ARPACSVParser:
-    """ Entità addetta al parsing dei CSV di origine ARPA. Le sezioni
-    riconosciute sono presenti in una lista di regex comune a tutte le entità
-    ARPACSVParser. Si fa notare che non tutti i CSV presentano gli stessi campi,
-    sfortunatamente. """
-
-    recognized_fields = {
-        re.compile(r'Codice richiesta'): 'CodiceRichiesta',
-        re.compile(r'Quota'): 'Quota'
-    }
-
-    class ARPACSV:
-        pass
-
-    @staticmethod
-    def parse_csv(csv) -> ARPACSV:
-        pass
 
 
 class ARPAJsonApiReader:
@@ -1225,10 +1406,8 @@ class APIWorker:
                     )
                 raw_csv_file = base64.b64decode(str(part.get_payload()))
                 payload = raw_csv_file.decode('utf-8')
-                self._csvs.append(payload)
             elif main_type == 'text':
                 payload = part.get_payload()
-                self._csvs.append(payload)
             else:
                 raise ValueError(
                     "Il CSV allegato nella risposta API è in un formato "
@@ -1241,6 +1420,10 @@ class APIWorker:
 
         print("Nuovi csv: ", self._csvs)
         return
+
+    @property
+    def csvs(self):
+        return self._csvs
 
 
 class APIRequestIssuer:
@@ -1260,6 +1443,17 @@ class APIRequestIssuer:
         Questa entità crea n_batch+1 sotto processi al momento dell'invio
     delle richieste, di cui n_batch workers che fanno richieste all'ultimo
     processo che è l'oggetto IMAPManager.
+
+    VERSIONING: SCRAPPED MULTITHREADING SECTION.
+                FUTURES: ADD IN 1.01
+                Proposal:
+                1) with concurrent.futures.ThreadPoolExecutor(
+                2)         max_workers=len(packages) + 1 # Uno di più per il gestore IMAP
+                3) ) as executor:
+                4)     for req_id in req_ids:
+                5)         latest_worker = executor.submit(APIWorker(req_id, imap_serv))
+                6)         workers.append(latest_worker)
+                7)      executor.submit(imap_serv)
     """
     # TODO: Add to gitignore.
     _arpa_api_url = 'https://www.arpa.piemonte.it/radar/open-scripts/richiesta_dati_gg.php?richiesta=1'
@@ -1306,29 +1500,24 @@ class APIRequestIssuer:
                     address=APIRequestIssuer._arpa_api_url,
                     table=APIRequestIssuer._arpa_api_table_name
                 )
+
+                def _no_flood_assurance():
+                    _no_flood_amt = 30
+                    time.sleep(_no_flood_amt)
+                _no_flood_assurance()
                 req_ids.append(req_id)
             import concurrent.futures
             with IMAPAccesser(imap_mail_address=e_mail, expected_ids=req_ids) as imap_serv:
                 _just_single_access = 1
-                print("Sto inizializzando il threadpool")
+                print("Sto inizializzando il threadpool. ")
                 with concurrent.futures.ThreadPoolExecutor(
                         max_workers=_just_single_access
                 ) as executor:
                     # Per evitare che la chiamata sia bloccante, usa una
                     # funzionalità multi-thread
-                    print("Ho submitatto il worker")
-                    executor.submit(APIWorker(req_ids, imap_serv))
-
-                """ VERSIONING: SCRAPPED MULTITHREADING SECTION.
-                FUTURES: ADD IN 1.01
-                Proposal: 
-                1) with concurrent.futures.ThreadPoolExecutor(
-                2)         max_workers=len(packages) + 1  # Uno di più per il gestore IMAP
-                3) ) as executor:
-                4)     for req_id in req_ids:
-                5)         latest_worker = executor.submit(APIWorker(req_id, imap_serv))
-                6)         workers.append(latest_worker)
-                7)      executor.submit(imap_serv)              """
+                    worker = APIWorker(req_ids, imap_serv)
+                    process = executor.submit(worker)
+                    return process, worker
 
         except Exception as broad_exception:
             for worker in workers:
@@ -1597,7 +1786,7 @@ if __name__ == '__main__':
     req_issuer.issue_request(
         # "data_inizio":"2023-01-24","data_fine":"2023-04-26","richiedente":"4","tipofile":"csv","parametri":["IU"],"stazioni":["379"]
         [{'stazione': 'ANDRATE PINALBA', 'dati': ['Prec'],
-          'intervallo': '2023-02-12*2023-04-28'}],
+          'intervallo': '2023-03-12*2023-03-24'}],
         'ggriverflow1@outlook.it'
     )
     """
@@ -1606,6 +1795,7 @@ if __name__ == '__main__':
         sc = s.readlines()
         new_script = APIConfigEnv(sc)
         sec = new_script.get_label_section('StazioneBocchetta')
-        sec['intervallo'] = 'ciaonee'
         new_script.save('C:/Users/picul/OneDrive/Documenti/apiconfigupdate.io')
         new_script.execute()
+
+
