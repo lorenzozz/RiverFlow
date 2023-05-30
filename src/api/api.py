@@ -270,7 +270,7 @@ def _make_api_cached(mode=_default_api_cache_mode):
     return _cache_decorator
 
 
-class _EnvLabel:
+class EnvLabel:
     _REQ_LABEL = 0x12
     _META_LABEL = 0x13
     _DEFAULT_LABEL = 0x14
@@ -281,7 +281,7 @@ class _EnvLabel:
         """ Inizializza un entità di tipo _EnvLabel """
 
         self.label_type = lab_type
-        if lab_type not in _EnvLabel.label_types:
+        if lab_type not in EnvLabel.label_types:
             raise apierrors.ParseError(
                 "La targhetta specificata è incorretta. "
             )
@@ -329,12 +329,12 @@ class _EnvLabel:
         avviene, dopo una pulizia della stringa, nella dichiarazione di
         fields. """
 
-        if self.label_type == _EnvLabel.EMPTY_LABEL:
+        if self.label_type == EnvLabel.EMPTY_LABEL:
             return dict()
         else:
             raw = raw.strip()
             fields = {}
-            if (self.label_type == _EnvLabel._REQ_LABEL and
+            if (self.label_type == EnvLabel._REQ_LABEL and
                     raw.strip().endswith(APIConfigEnv.req_end_token)):
                 raw = raw.strip(''.join(APIConfigEnv.req_closure))
             items = [li for li in raw.split(';') if li and not str.isspace(li)]
@@ -374,9 +374,10 @@ class ARPACSV:
 
     @staticmethod
     def sanitize_csv_return_lines_sep(csv: str):
-        """ Rimuovi newline inutili a fine file e verifica
-        che la risposta API non sia corrotta. Ritorna il
-        separatore rilevato all'interno del file CSV. """
+        """ Rimuovi newline inutili a fine file e verifica che la risposta
+        API non sia corrotta. Ritorna il separatore rilevato all'interno del
+        file CSV. """
+
         if (
                 csv is not None and
                 len(csv) > 0
@@ -395,19 +396,20 @@ class ARPACSV:
             for sep in possible_seps:
                 if csv.count(sep) > _sep_threshold:
                     return sep, lines
-        return None, None
 
     @staticmethod
     def clean_csv_lines(csv: list):
-        """ """
+        """ Rimuovi tutti gli spazi dal csv. Gli unici elementi che presentano spazi
+        nell'API Arpa sono elementi non numerici e di scarso interesse. """
+
         for line_no in range(len(csv)):
             csv[line_no] = csv[line_no].replace(' ', '')
         return csv
 
     @staticmethod
     def parse_csv(csv: str):
-        """ Leggi un csv di risposta arpa e dividilo nel suo
-        header e nei dati effettivi. """
+        """ Leggi un csv di risposta arpa e dividilo nel suo header e nei
+        dati effettivi. """
 
         sep, lines = ARPACSV.sanitize_csv_return_lines_sep(csv)
         if not sep:
@@ -599,10 +601,11 @@ class CSVBatchMaker:
 
     @staticmethod
     def _validate_csvs_length_maybe_issue_warning(def_vars: dict[str, list]):
-        """ Avvisa l'utente se sono presenti variabili di lunghezze
-        diverse all'interno del batch. """
+        """ Avvisa l'utente se sono presenti variabili di lunghezze diverse
+        all'interno del batch. """
+
         if def_vars.items():
-            all_lengths = set([len(v) for v in def_vars])
+            all_lengths = set([len(v) for v in def_vars.values()])
             if len(all_lengths) > 1:
                 from warnings import warn
                 warn("Nel batch di CSV richiesti sono presenti "
@@ -612,6 +615,7 @@ class CSVBatchMaker:
 
 def _text_list_to_py_list(text, sep=','):
     """ Converte un elenco testuale in una lista python. """
+
     text = text.strip()
     if text.endswith(']') or text[0] == '[':
         text = text.strip('[]')
@@ -619,8 +623,8 @@ def _text_list_to_py_list(text, sep=','):
 
 
 def _text_list_to_py_dic(text, sep=';', strip=' \n'):
-    print(text)
     """ Converte una lista su più linee in un dizionario python. """
+
     if not isinstance(text, list):
         text = text.split(',')
     res_dic = {}
@@ -660,6 +664,7 @@ def parse_macro_area_decl(script, line_index):
 
 def _make_py_dic_from_section(line, script):
     """ Crea un dizionario python a partire da una sezione dello script. """
+
     line = line + 1
     next_t = APIConfigEnv.find_next_dollar_sign_tok(script, line)
     p_list = _text_list_to_py_dic(script[line:line + next_t], ':', ' ;\n')
@@ -667,9 +672,10 @@ def _make_py_dic_from_section(line, script):
 
 
 def parse_req(script, line, authority: CSVBatchMaker):
-    """ Parse-a una richiesta $Request$ dallo script fornito.
-    Passa all'autorità i dati ottenuti dal parsing. Si fa notare
-    che i dati $Meta$ vengono letti da parse_meta e non da questa funzione. """
+    """ Parse-a una richiesta $Request$ dallo script fornito. Passa all'autorità
+    i dati ottenuti dal parsing. Si fa notare che i dati $Meta$ vengono letti da
+    parse_meta e non da questa funzione. """
+
     p_list, next_t = _make_py_dic_from_section(line, script)
     # Salta la dichiarazione della sezione $Request$
     if 'format_strings' not in p_list.keys():
@@ -693,8 +699,9 @@ def parse_req(script, line, authority: CSVBatchMaker):
 
 
 def parse_meta(script, line, authority: CSVBatchMaker):
-    """ Parse-a una sezione di tipo meta e compila i dati all'interno
-    dell'autorità passata come argomento. """
+    """ Parse-a una sezione di tipo meta e compila i dati all'interno dell'autorità
+    passata come argomento. """
+
     p_list, next_t = _make_py_dic_from_section(line, script)
     if (
             not 'email_address' in p_list or
@@ -740,9 +747,17 @@ class APIConfigEnv:
     def __init__(self, script=None):
         self._current_script = script
 
-    def update_from_label(self, label: _EnvLabel):
+    @staticmethod
+    def get_from_file(filepath: str):
+        with open(filepath, 'r') as file_source:
+            src = file_source.readlines()
+            file_script = APIConfigEnv(src)
+        return file_script
+
+    def update_from_label(self, label: EnvLabel):
         """ Aggiorna la sezione nello script corrente sulla base dei dati contenuti
         dentro la targhetta env. """
+
         if not self._current_script:
             raise apierrors.ParseError(
                 "Impossibile modificare la sezione {sec} in quanto "
@@ -789,11 +804,10 @@ class APIConfigEnv:
 
     @staticmethod
     def find_next_dollar_sign_tok(script, from_i):
-        """ Trova il prossimo token generico a partire dalla
-        posizione from_i nello script passato come argomento.
-        Se l'argomento non è già stato diviso in righe, allora
-        la funzione divide la lista con uno split lungo le newline
-        """
+        """ Trova il prossimo token generico a partire dalla posizione from_i nello
+        script passato come argomento. Se l'argomento non è già stato diviso in righe,
+        allora la funzione divide la lista con uno split lungo le newline """
+
         if not isinstance(script, list):
             script = script.split('\n')
         eos = None
@@ -808,7 +822,7 @@ class APIConfigEnv:
 
         return eos
 
-    def get_label_section(self, label_name: str, script=None) -> _EnvLabel:
+    def get_label_section(self, label_name: str, script=None) -> EnvLabel:
         if not script and not self._current_script:
             raise apierrors.ParseError(
                 "Fornisci uno script di default nel costruttore "
@@ -819,8 +833,8 @@ class APIConfigEnv:
             script = self._current_script
         label_decl = APIConfigEnv._find_label_line(script, label_name)
         if not label_decl:
-            return _EnvLabel(
-                _EnvLabel.EMPTY_LABEL, 'Empty Section', str(),
+            return EnvLabel(
+                EnvLabel.EMPTY_LABEL, 'Empty Section', str(),
                 None
             )
         else:
@@ -828,7 +842,7 @@ class APIConfigEnv:
             beg_sec = label_decl + 1
             lab_type = None
             for (section_rex, _), sec_type_code in zip(
-                    APIConfigEnv._sections.values(), _EnvLabel.label_types
+                    APIConfigEnv._sections.values(), EnvLabel.label_types
             ):
                 if section_rex.findall(script[beg_sec]):
                     lab_type = sec_type_code
@@ -837,7 +851,7 @@ class APIConfigEnv:
             eos = APIConfigEnv.find_next_dollar_sign_tok(script, find_sec)
             if eos:
                 label_sec = ''.join(script[find_sec:eos + find_sec])
-                env = _EnvLabel(
+                env = EnvLabel(
                     lab_type, label_name, label_sec,
                     self  # Diventa l'autorità associata alla targhetta.
                 )
@@ -1445,16 +1459,15 @@ class APIRequestIssuer:
     processo che è l'oggetto IMAPManager.
 
     VERSIONING: SCRAPPED MULTITHREADING SECTION.
-                FUTURES: ADD IN 1.01
-                Proposal:
-                1) with concurrent.futures.ThreadPoolExecutor(
-                2)         max_workers=len(packages) + 1 # Uno di più per il gestore IMAP
-                3) ) as executor:
-                4)     for req_id in req_ids:
-                5)         latest_worker = executor.submit(APIWorker(req_id, imap_serv))
-                6)         workers.append(latest_worker)
-                7)      executor.submit(imap_serv)
-    """
+        FUTURES: ADD IN 1.01
+        Proposal:
+    1] with concurrent.futures.ThreadPoolExecutor(
+    2]         max_workers=len(packages) + 1 # Uno di più per il gestore IMAP
+    3] ) as executor:
+    4]     for req_id in req_ids:
+    5]         latest_worker = executor.submit(APIWorker(req_id, imap_serv))
+    6]         workers.append(latest_worker)
+    7]      executor.submit(imap_serv) """
     # TODO: Add to gitignore.
     _arpa_api_url = 'https://www.arpa.piemonte.it/radar/open-scripts/richiesta_dati_gg.php?richiesta=1'
     _arpa_api_table_name = 'richiesta_dati.dati_giornalieri'
@@ -1795,7 +1808,9 @@ if __name__ == '__main__':
         sc = s.readlines()
         new_script = APIConfigEnv(sc)
         sec = new_script.get_label_section('StazioneBocchetta')
-        new_script.save('C:/Users/picul/OneDrive/Documenti/apiconfigupdate.io')
-        new_script.execute()
+        sec['stazione'] = 'Ciaone!'
+        print(sec)
+        # new_script.save('C:/Users/picul/OneDrive/Documenti/apiconfigupdate.io')
+        # new_script.execute()
 
 
