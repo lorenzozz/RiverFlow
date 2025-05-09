@@ -1,6 +1,6 @@
 # RiverFlow
 
-Monitoraggio eco-aware plant-based green-compatible bio-diverse di risorse idriche naturali
+Monitoraggio e predizione del livello d'altezza di corsi d'acqua
 
 
 # Prerequisiti
