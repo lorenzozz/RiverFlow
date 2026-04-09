@@ -1,5 +1,6 @@
 # RiverFlow
 
+![results](./resources/Reportgraph2.png)
 Monitoraggio e predizione del livello d'altezza di corsi d'acqua
 
 
